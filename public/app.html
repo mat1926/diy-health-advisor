@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>App — VitalGauge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="site-header">
+        <a class="brand" href="/">Vital<span>Gauge</span></a>
+        <nav class="nav">
+          <span class="badge" id="plan-badge">Plan: …</span>
+          <a href="/pricing.html">Pricing</a>
+          <button type="button" class="btn btn-ghost" id="portal-btn" hidden>Manage billing</button>
+        </nav>
+      </header>
+
+      <aside class="disclaimer-banner" role="note">
+        <strong>Not medical advice.</strong>
+        Output is general wellness information for DIY self-tracking. Talk to a licensed clinician
+        for personal medical decisions. Emergency? Call your local emergency number.
+      </aside>
+
+      <section class="section">
+        <h2>Your metrics</h2>
+        <p class="sub" id="plan-sub">Loading plan limits…</p>
+
+        <form id="metrics-form" class="panel">
+          <div class="form-grid">
+            <label>
+              Age
+              <input name="age" type="number" min="13" max="120" required />
+            </label>
+            <label>
+              Sex
+              <select name="sex">
+                <option value="prefer_not">Prefer not to say</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>
+              Height (cm)
+              <input name="heightCm" type="number" min="100" max="250" required />
+            </label>
+            <label>
+              Weight (kg)
+              <input name="weightKg" type="number" min="30" max="300" step="0.1" required />
+            </label>
+            <label>
+              Activity level
+              <select name="activityLevel" required>
+                <option value="sedentary">Sedentary</option>
+                <option value="light">Light</option>
+                <option value="moderate" selected>Moderate</option>
+                <option value="active">Active</option>
+                <option value="very_active">Very active</option>
+              </select>
+            </label>
+            <label>
+              Primary goal
+              <select name="primaryGoal" required>
+                <option value="general">General wellness</option>
+                <option value="energy">More energy</option>
+                <option value="sleep">Better sleep</option>
+                <option value="weight">Weight management</option>
+                <option value="strength">Strength</option>
+                <option value="stress">Stress</option>
+              </select>
+            </label>
+
+            <label class="plus-only">
+              Sleep (hours / night)
+              <input name="sleepHours" type="number" min="0" max="24" step="0.5" />
+            </label>
+            <label class="plus-only">
+              Stress (1–10)
+              <input name="stressLevel" type="number" min="1" max="10" />
+            </label>
+            <label class="plus-only">
+              Resting heart rate
+              <input name="restingHeartRate" type="number" min="30" max="220" />
+            </label>
+            <label class="plus-only">
+              Steps / day
+              <input name="stepsPerDay" type="number" min="0" max="100000" />
+            </label>
+            <label class="plus-only">
+              Water (liters / day)
+              <input name="waterLiters" type="number" min="0" max="20" step="0.1" />
+            </label>
+            <label class="plus-only" style="grid-column: 1 / -1">
+              Notes (optional)
+              <textarea name="notes" rows="3" maxlength="500" placeholder="Context you want considered…"></textarea>
+            </label>
+          </div>
+
+          <div class="locked-note plus-locked" id="plus-upsell">
+            Plus fields (sleep, stress, heart rate, steps, hydration, notes) unlock with a $9/mo
+            subscription.
+            <a href="/pricing.html">Upgrade</a>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" id="submit-btn">Get guidance</button>
+            <a class="btn btn-ghost" href="/disclaimer.html">Read disclaimer</a>
+          </div>
+          <p class="error" id="form-error" hidden></p>
+        </form>
+
+        <div class="result" id="result" hidden>
+          <article class="panel">
+            <h3>Summary</h3>
+            <p id="out-summary"></p>
+            <p class="muted" id="out-meta"></p>
+          </article>
+          <article class="panel">
+            <h3>Try this</h3>
+            <ul id="out-actions"></ul>
+          </article>
+          <article class="panel">
+            <h3>Watch-outs</h3>
+            <ul id="out-watchouts"></ul>
+          </article>
+          <article class="panel">
+            <h3>When to seek care</h3>
+            <ul id="out-care"></ul>
+          </article>
+          <article class="panel disclaimer-banner">
+            <strong>Reminder:</strong>
+            <span id="out-disclaimer"></span>
+          </article>
+        </div>
+      </section>
+    </div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

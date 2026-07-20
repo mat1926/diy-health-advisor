@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VitalGauge — DIY health metrics, AI wellness guidance</title>
+    <meta
+      name="description"
+      content="Enter your metrics. Get practical DIY wellness guidance with clear medical disclaimers. Not a doctor replacement."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="site-header">
+        <a class="brand" href="/">Vital<span>Gauge</span></a>
+        <nav class="nav">
+          <a href="#how">How it works</a>
+          <a href="/pricing.html">Pricing</a>
+          <a class="btn btn-primary" href="/app.html">Open app</a>
+        </nav>
+      </header>
+
+      <section class="hero">
+        <p class="badge">DIY wellness · not clinical care</p>
+        <h1>VitalGauge</h1>
+        <p class="lede">
+          Put in your metrics. Get plain-language wellness guidance you can try at home —
+          with a hard line that this never replaces a doctor.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="/app.html">Start free</a>
+          <a class="btn btn-ghost" href="/pricing.html">See Plus</a>
+        </div>
+      </section>
+
+      <aside class="disclaimer-banner" role="note">
+        <strong>Important:</strong>
+        VitalGauge is educational self-tracking software only. It does not diagnose, treat, or
+        replace professional medical advice. For emergencies, call your local emergency number.
+      </aside>
+
+      <section class="section" id="how">
+        <h2>Metrics in. Guidance out.</h2>
+        <p class="sub">
+          Built for people who already track sleep, steps, or weight and want a structured next
+          step — not a clinic in a browser.
+        </p>
+        <div class="grid-2">
+          <article class="panel">
+            <h3>1. Enter basics</h3>
+            <p class="muted">
+              Free plan covers age, height, weight, activity, and a primary goal. No card required.
+            </p>
+          </article>
+          <article class="panel">
+            <h3>2. Get a plan</h3>
+            <p class="muted">
+              Short summary, concrete actions, watch-outs, and when to talk to a clinician.
+            </p>
+          </article>
+          <article class="panel">
+            <h3>3. Upgrade if useful</h3>
+            <p class="muted">
+              Plus unlocks sleep, stress, heart rate, hydration, notes, and higher daily limits via
+              Stripe.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <footer class="site-footer">
+        <p>
+          © <span id="y"></span> VitalGauge ·
+          <a href="/disclaimer.html">Full disclaimer</a> ·
+          Not affiliated with any medical provider.
+        </p>
+      </footer>
+    </div>
+    <script>
+      document.getElementById("y").textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>
