@@ -2,6 +2,7 @@
 
 DIY health metrics → AI-enhanced wellness guidance, with hard medical disclaimers.
 
+**Production:** [https://health.emailmenow.com](https://health.emailmenow.com)  
 **Not a doctor. Not a diagnosis. Not emergency care.**
 
 ## What it does
@@ -81,9 +82,17 @@ VitalGauge provides general wellness information for educational and DIY self-tr
 
 ## Deploy
 
+Deploys as the Cloudflare Worker named `health` with custom domain `health.emailmenow.com`.
+
 ```bash
 npm run deploy
+# equivalent: npx wrangler deploy --keep-vars
 ```
+
+Set production `APP_URL=https://health.emailmenow.com` (already in `wrangler.jsonc` vars).  
+Stripe webhook URL: `https://health.emailmenow.com/api/webhooks/stripe`
+
+> **Note:** This Worker replaces the previous Astro content build on the same Worker name/domain. Keep the `mat1926/health` content repo if you still need those guides elsewhere.
 
 ## License
 

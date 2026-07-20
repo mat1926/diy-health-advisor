@@ -1,26 +1,46 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "diy-health-advisor",
+  // Same Cloudflare Worker name as the live site so deploys bind to health.emailmenow.com
+  "name": "health",
   "main": "src/worker/index.ts",
   "compatibility_date": "2026-07-20",
   "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "routes": [
+    {
+      "pattern": "health.emailmenow.com",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Ensure advice/checkout APIs hit the Worker before static assets
+    "run_worker_first": ["/api/*"]
   },
   "kv_namespaces": [
     {
       "binding": "SESSIONS",
-      "id": "00000000000000000000000000000000",
-      "preview_id": "00000000000000000000000000000000"
+      "id": "4f0ed32c04ea42f4aa4da4ded9cab9f0",
+      "preview_id": "5cceff5a53bf4ec792ae43d66b171ade"
     }
   ],
-  // Set secrets with: wrangler secret put STRIPE_SECRET_KEY | STRIPE_WEBHOOK_SECRET | OPENAI_API_KEY
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 0.1,
+      "persist": true,
+      "invocation_logs": true
+    }
+  },
+  // Secrets: wrangler secret put STRIPE_SECRET_KEY | STRIPE_WEBHOOK_SECRET | OPENAI_API_KEY
   "vars": {
     "APP_NAME": "VitalGauge",
-    "APP_URL": "http://localhost:8787",
-    // Create a Stripe Product + recurring Price, then paste the price id here
+    "APP_URL": "https://health.emailmenow.com",
+    // Create a Stripe Product + recurring Price, then paste the price id here (or dashboard var)
     "STRIPE_PRICE_PLUS": "price_REPLACE_ME",
     "STRIPE_PUBLISHABLE_KEY": "pk_test_REPLACE_ME"
   }
