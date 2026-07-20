@@ -8,6 +8,7 @@ import {
   sanitizeMetrics,
   type PlanId,
 } from "./plans";
+import { LENS_DISCLAIMER, PERSPECTIVES } from "./perspectives";
 import {
   createPortalSession,
   getEntitlement,
@@ -51,6 +52,8 @@ app.get("/v1/health", (c) =>
 app.get("/v1/plans", (c) =>
   c.json({
     disclaimer: MEDICAL_DISCLAIMER,
+    lensDisclaimer: LENS_DISCLAIMER,
+    perspectives: PERSPECTIVES,
     plans: PLAN_LIMITS,
     publishableKey: c.env.STRIPE_PUBLISHABLE_KEY,
   }),

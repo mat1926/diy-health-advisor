@@ -9,6 +9,7 @@ export const FREE_FIELDS = [
   "weightKg",
   "activityLevel",
   "primaryGoal",
+  "perspective",
 ] as const;
 
 export const PLUS_FIELDS = [
@@ -18,6 +19,8 @@ export const PLUS_FIELDS = [
   "restingHeartRate",
   "stepsPerDay",
   "waterLiters",
+  "salivaPh",
+  "urinePh",
   "notes",
 ] as const;
 
@@ -33,7 +36,8 @@ export const PLAN_LIMITS = {
     fields: FREE_FIELDS,
     features: [
       "Basic metrics (age, height ft/in, weight lbs, activity, goal)",
-      "Short AI wellness summary",
+      "Choose an alternative wellness lens (Berg, Ekberg, Axe, Jockers, Clark, or blend)",
+      "Short DIY wellness summary",
       "3 advice runs per day",
       "Always-visible medical disclaimer",
     ],
@@ -47,6 +51,7 @@ export const PLAN_LIMITS = {
     features: [
       "Everything in Free",
       "Sleep, stress, heart rate, steps, hydration, notes",
+      "DIY saliva & urine pH (stress-pattern style self-tracking)",
       "Deeper, structured action plan",
       "50 advice runs per day",
       "Stripe Customer Portal (cancel anytime)",
@@ -61,11 +66,14 @@ export type MetricsInput = {
   weightKg?: number;
   activityLevel?: "sedentary" | "light" | "moderate" | "active" | "very_active";
   primaryGoal?: "energy" | "sleep" | "weight" | "strength" | "stress" | "general";
+  perspective?: "blend" | "berg" | "ekberg" | "axe" | "jockers" | "clark";
   sleepHours?: number;
   stressLevel?: number;
   restingHeartRate?: number;
   stepsPerDay?: number;
   waterLiters?: number;
+  salivaPh?: number;
+  urinePh?: number;
   notes?: string;
 };
 
@@ -140,6 +148,8 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
   num("restingHeartRate", 30, 220);
   num("stepsPerDay", 0, 100_000);
   num("waterLiters", 0, 20);
+  num("salivaPh", 4.5, 8.5);
+  num("urinePh", 4.5, 9.0);
 
   if (allowed.has("heightCm") || allowed.has("weightKg")) {
     const { heightCm, weightKg } = resolveHeightWeight(raw);
@@ -150,6 +160,7 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
   str("sex", ["female", "male", "other", "prefer_not"] as const);
   str("activityLevel", ["sedentary", "light", "moderate", "active", "very_active"] as const);
   str("primaryGoal", ["energy", "sleep", "weight", "strength", "stress", "general"] as const);
+  str("perspective", ["blend", "berg", "ekberg", "axe", "jockers", "clark"] as const);
 
   if (allowed.has("notes") && typeof raw.notes === "string") {
     out.notes = raw.notes.trim().slice(0, 500);

@@ -81,6 +81,8 @@ async function boot() {
       "restingHeartRate",
       "stepsPerDay",
       "waterLiters",
+      "salivaPh",
+      "urinePh",
     ]) {
       if (payload[key] === "" || payload[key] == null) delete payload[key];
       else if (payload[key] != null) payload[key] = Number(payload[key]);
@@ -97,10 +99,26 @@ async function boot() {
       document.getElementById("out-summary").textContent = data.summary;
       document.getElementById("out-meta").textContent =
         `Source: ${data.source} · usage ${data.usage?.used}/${data.usage?.limit}`;
+      const lens = document.getElementById("out-lens");
+      if (data.perspective?.label) {
+        lens.hidden = false;
+        lens.textContent = data.perspective.label;
+      } else {
+        lens.hidden = true;
+      }
+      const themesWrap = document.getElementById("out-themes-wrap");
+      if (data.perspective?.themes?.length) {
+        themesWrap.hidden = false;
+        fillList(document.getElementById("out-themes"), data.perspective.themes);
+      } else {
+        themesWrap.hidden = true;
+      }
       fillList(document.getElementById("out-actions"), data.actions);
       fillList(document.getElementById("out-watchouts"), data.watchouts);
       fillList(document.getElementById("out-care"), data.whenToSeekCare);
       document.getElementById("out-disclaimer").textContent = data.disclaimer;
+      document.getElementById("out-lens-disclaimer").textContent =
+        data.lensDisclaimer || "";
       result.hidden = false;
       result.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (err) {

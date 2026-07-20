@@ -78,7 +78,18 @@
                 <option value="sleep">Better sleep</option>
                 <option value="weight">Weight management</option>
                 <option value="strength">Strength</option>
-                <option value="stress">Stress</option>
+                <option value="stress">Stress patterns</option>
+              </select>
+            </label>
+            <label style="grid-column: 1 / -1">
+              Alternative wellness lens
+              <select name="perspective" required>
+                <option value="blend" selected>Blend (Berg · Ekberg · Axe · Jockers · Clark)</option>
+                <option value="berg">Dr. Berg–style (metabolic / keto-leaning)</option>
+                <option value="ekberg">Dr. Ekberg–style (metabolic fitness)</option>
+                <option value="axe">Dr. Axe–style (food as medicine / gut)</option>
+                <option value="jockers">Dr. Jockers–style (functional nutrition)</option>
+                <option value="clark">Dr. Clark–style (clean living / DIY hygiene)</option>
               </select>
             </label>
 
@@ -102,6 +113,14 @@
               Water (liters / day)
               <input name="waterLiters" type="number" min="0" max="20" step="0.1" />
             </label>
+            <label class="plus-only">
+              Saliva pH (DIY strip)
+              <input name="salivaPh" type="number" min="4.5" max="8.5" step="0.1" placeholder="e.g. 6.8" />
+            </label>
+            <label class="plus-only">
+              Urine pH (DIY strip)
+              <input name="urinePh" type="number" min="4.5" max="9" step="0.1" placeholder="e.g. 6.2" />
+            </label>
             <label class="plus-only" style="grid-column: 1 / -1">
               Notes (optional)
               <textarea name="notes" rows="3" maxlength="500" placeholder="Context you want considered…"></textarea>
@@ -109,8 +128,8 @@
           </div>
 
           <div class="locked-note plus-locked" id="plus-upsell">
-            Plus fields (sleep, stress, heart rate, steps, hydration, notes) unlock with a $9/mo
-            subscription.
+            Plus unlocks sleep, stress, heart rate, steps, hydration, DIY saliva/urine pH
+            (stress-pattern style self-tracking), and notes.
             <a href="/pricing.html">Upgrade</a>
           </div>
 
@@ -126,6 +145,11 @@
             <h3>Summary</h3>
             <p id="out-summary"></p>
             <p class="muted" id="out-meta"></p>
+            <p class="badge" id="out-lens" hidden></p>
+          </article>
+          <article class="panel" id="out-themes-wrap" hidden>
+            <h3>Lens themes</h3>
+            <ul id="out-themes"></ul>
           </article>
           <article class="panel">
             <h3>Try this</h3>
@@ -142,6 +166,10 @@
           <article class="panel disclaimer-banner">
             <strong>Reminder:</strong>
             <span id="out-disclaimer"></span>
+          </article>
+          <article class="panel disclaimer-banner">
+            <strong>Alternative lenses:</strong>
+            <span id="out-lens-disclaimer"></span>
           </article>
         </div>
       </section>
