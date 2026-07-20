@@ -22,9 +22,9 @@ type Variables = { clientKey: string; plan: PlanId };
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
-app.use("/api/*", cors());
+app.use("/v1/*", cors());
 
-app.use("/api/*", async (c, next) => {
+app.use("/v1/*", async (c, next) => {
   const headerKey = c.req.header("x-client-key");
   const cookie = parseCookie(c.req.header("cookie") || "")["vg_client"];
   const clientKey = headerKey || cookie || crypto.randomUUID();
@@ -40,7 +40,7 @@ app.use("/api/*", async (c, next) => {
   }
 });
 
-app.get("/api/health", (c) =>
+app.get("/v1/health", (c) =>
   c.json({
     ok: true,
     app: c.env.APP_NAME || "VitalGauge",
@@ -48,7 +48,7 @@ app.get("/api/health", (c) =>
   }),
 );
 
-app.get("/api/plans", (c) =>
+app.get("/v1/plans", (c) =>
   c.json({
     disclaimer: MEDICAL_DISCLAIMER,
     plans: PLAN_LIMITS,
@@ -56,7 +56,7 @@ app.get("/api/plans", (c) =>
   }),
 );
 
-app.get("/api/me", async (c) => {
+app.get("/v1/me", async (c) => {
   const entitlement = await getEntitlement(c.env, c.get("clientKey"));
   return c.json({
     clientKey: c.get("clientKey"),
@@ -66,7 +66,7 @@ app.get("/api/me", async (c) => {
   });
 });
 
-app.post("/api/advice", async (c) => {
+app.post("/v1/advice", async (c) => {
   const plan = c.get("plan");
   const clientKey = c.get("clientKey");
   const body = (await c.req.json().catch(() => ({}))) as Record<string, unknown>;
@@ -97,7 +97,7 @@ app.post("/api/advice", async (c) => {
   });
 });
 
-app.post("/api/checkout", async (c) => {
+app.post("/v1/checkout", async (c) => {
   try {
     const body = (await c.req.json().catch(() => ({}))) as { email?: string };
     const clientKey = c.get("clientKey");
@@ -132,7 +132,7 @@ app.post("/api/checkout", async (c) => {
   }
 });
 
-app.post("/api/portal", async (c) => {
+app.post("/v1/portal", async (c) => {
   try {
     const entitlement = await getEntitlement(c.env, c.get("clientKey"));
     if (!entitlement.customerId) {
@@ -146,7 +146,7 @@ app.post("/api/portal", async (c) => {
   }
 });
 
-app.post("/api/checkout/confirm", async (c) => {
+app.post("/v1/checkout/confirm", async (c) => {
   // Fallback if webhook is delayed — confirm session and unlock Plus locally
   try {
     const { session_id: sessionId } = (await c.req.json()) as { session_id?: string };
@@ -177,7 +177,7 @@ app.post("/api/checkout/confirm", async (c) => {
   }
 });
 
-app.post("/api/webhooks/stripe", async (c) => {
+app.post("/v1/webhooks/stripe", async (c) => {
   const raw = await c.req.text();
   return handleStripeWebhook(c.env, raw, c.req.header("stripe-signature") || null);
 });

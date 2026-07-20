@@ -36,7 +36,7 @@ async function boot() {
   const sessionId = params.get("session_id");
   if (sessionId) {
     try {
-      await api("/api/checkout/confirm", {
+      await api("/v1/checkout/confirm", {
         method: "POST",
         body: JSON.stringify({ session_id: sessionId }),
       });
@@ -46,7 +46,7 @@ async function boot() {
     }
   }
 
-  const me = await api("/api/me");
+  const me = await api("/v1/me");
   const plan = me.plan || "free";
   badge.textContent = `Plan: ${me.limits?.name || plan}`;
   sub.textContent = `${me.limits?.name || plan} · ${me.limits?.advicePerDay ?? "?"} advice runs / day`;
@@ -57,7 +57,7 @@ async function boot() {
     portalBtn.hidden = false;
     portalBtn.onclick = async () => {
       try {
-        const { url } = await api("/api/portal", { method: "POST", body: "{}" });
+        const { url } = await api("/v1/portal", { method: "POST", body: "{}" });
         location.href = url;
       } catch (e) {
         alert(e.message);
@@ -89,7 +89,7 @@ async function boot() {
     btn.disabled = true;
     btn.textContent = "Working…";
     try {
-      const data = await api("/api/advice", {
+      const data = await api("/v1/advice", {
         method: "POST",
         body: JSON.stringify(payload),
       });

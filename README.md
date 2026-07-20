@@ -59,7 +59,7 @@ npx wrangler secret put STRIPE_WEBHOOK_SECRET
 npx wrangler secret put OPENAI_API_KEY   # optional
 ```
 
-4. Webhook endpoint: `POST /api/webhooks/stripe`  
+4. Webhook endpoint: `POST /v1/webhooks/stripe`  
    Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`
 
 5. Set `APP_URL` to your deployed origin (success/cancel/portal return URLs).
@@ -68,13 +68,13 @@ npx wrangler secret put OPENAI_API_KEY   # optional
 
 ## API
 
-- `GET /api/health` — liveness + disclaimer
-- `GET /api/plans` — plan catalog
-- `GET /api/me` — current browser session plan
-- `POST /api/advice` — metrics → guidance
-- `POST /api/checkout` — start Plus subscription
-- `POST /api/portal` — billing portal
-- `POST /api/webhooks/stripe` — Stripe events
+- `GET /v1/health` — liveness + disclaimer
+- `GET /v1/plans` — plan catalog
+- `GET /v1/me` — current browser session plan
+- `POST /v1/advice` — metrics → guidance
+- `POST /v1/checkout` — start Plus subscription
+- `POST /v1/portal` — billing portal
+- `POST /v1/webhooks/stripe` — Stripe events
 
 ## Disclaimer (product)
 
@@ -90,7 +90,7 @@ npm run deploy
 ```
 
 Set production `APP_URL=https://health.emailmenow.com` (already in `wrangler.jsonc` vars).  
-Stripe webhook URL: `https://health.emailmenow.com/api/webhooks/stripe`
+Stripe webhook URL: `https://health.emailmenow.com/v1/webhooks/stripe`
 
 > **Note:** This Worker replaces the previous Astro content build on the same Worker name/domain. Keep the `mat1926/health` content repo if you still need those guides elsewhere.
 

@@ -26,7 +26,7 @@ form.addEventListener("submit", async (e) => {
   errorEl.hidden = true;
   const email = new FormData(form).get("email") || undefined;
   try {
-    const { url } = await api("/api/checkout", {
+    const { url } = await api("/v1/checkout", {
       method: "POST",
       body: JSON.stringify({ email: email || undefined }),
     });
