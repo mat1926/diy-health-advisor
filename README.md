@@ -5,6 +5,8 @@ DIY health metrics → AI-enhanced wellness guidance, with hard medical disclaim
 **Production:** [https://health.emailmenow.com](https://health.emailmenow.com)  
 **Not a doctor. Not a diagnosis. Not emergency care.**
 
+Mobile (Android + iPhone) roadmap: [docs/MOBILE-APPS.md](docs/MOBILE-APPS.md)
+
 ## What it does
 
 1. Person enters metrics (free: basics; Plus: richer inputs).
@@ -15,7 +17,7 @@ DIY health metrics → AI-enhanced wellness guidance, with hard medical disclaim
 
 | Plan | Price | Inputs | Daily advice runs |
 |------|-------|--------|-------------------|
-| **Free** | $0 | Age, sex, height, weight, activity, goal | 3 |
+| **Free** | $0 | Age, sex, height (ft/in), weight (lbs), activity, goal | 3 |
 | **Plus** | $9/mo (Stripe) | + sleep, stress, resting HR, steps, water, notes | 50 |
 
 Charging model: **freemium SaaS** via Stripe Billing.

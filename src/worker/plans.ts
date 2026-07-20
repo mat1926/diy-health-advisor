@@ -32,7 +32,7 @@ export const PLAN_LIMITS = {
     advicePerDay: 3,
     fields: FREE_FIELDS,
     features: [
-      "Basic metrics (age, height, weight, activity, goal)",
+      "Basic metrics (age, height ft/in, weight lbs, activity, goal)",
       "Short AI wellness summary",
       "3 advice runs per day",
       "Always-visible medical disclaimer",
@@ -73,6 +73,47 @@ export function fieldsForPlan(plan: PlanId): readonly string[] {
   return PLAN_LIMITS[plan].fields;
 }
 
+const LB_TO_KG = 0.45359237;
+const IN_TO_CM = 2.54;
+
+function parseNum(raw: unknown): number | undefined {
+  const v = Number(raw);
+  return Number.isFinite(v) ? v : undefined;
+}
+
+/** Prefer ft/in + lbs (US defaults); still accept cm/kg from older clients. */
+export function resolveHeightWeight(raw: Record<string, unknown>): {
+  heightCm?: number;
+  weightKg?: number;
+} {
+  let heightCm: number | undefined;
+  let weightKg: number | undefined;
+
+  const ft = parseNum(raw.heightFt);
+  const inches = parseNum(raw.heightIn);
+  if (ft != null && inches != null && ft >= 3 && ft <= 8 && inches >= 0 && inches < 12) {
+    const totalIn = ft * 12 + inches;
+    if (totalIn >= 36 && totalIn <= 96) {
+      heightCm = Math.round(totalIn * IN_TO_CM * 10) / 10;
+    }
+  }
+  if (heightCm == null) {
+    const cm = parseNum(raw.heightCm);
+    if (cm != null && cm >= 100 && cm <= 250) heightCm = cm;
+  }
+
+  const lb = parseNum(raw.weightLb);
+  if (lb != null && lb >= 66 && lb <= 660) {
+    weightKg = Math.round(lb * LB_TO_KG * 10) / 10;
+  }
+  if (weightKg == null) {
+    const kg = parseNum(raw.weightKg);
+    if (kg != null && kg >= 30 && kg <= 300) weightKg = kg;
+  }
+
+  return { heightCm, weightKg };
+}
+
 export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): MetricsInput {
   const allowed = new Set(fieldsForPlan(plan));
   const out: MetricsInput = {};
@@ -94,13 +135,17 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
   };
 
   num("age", 13, 120);
-  num("heightCm", 100, 250);
-  num("weightKg", 30, 300);
   num("sleepHours", 0, 24);
   num("stressLevel", 1, 10);
   num("restingHeartRate", 30, 220);
   num("stepsPerDay", 0, 100_000);
   num("waterLiters", 0, 20);
+
+  if (allowed.has("heightCm") || allowed.has("weightKg")) {
+    const { heightCm, weightKg } = resolveHeightWeight(raw);
+    if (heightCm != null) out.heightCm = heightCm;
+    if (weightKg != null) out.weightKg = weightKg;
+  }
 
   str("sex", ["female", "male", "other", "prefer_not"] as const);
   str("activityLevel", ["sedentary", "light", "moderate", "active", "very_active"] as const);

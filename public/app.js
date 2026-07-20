@@ -73,8 +73,9 @@ async function boot() {
     const payload = Object.fromEntries(fd.entries());
     for (const key of [
       "age",
-      "heightCm",
-      "weightKg",
+      "heightFt",
+      "heightIn",
+      "weightLb",
       "sleepHours",
       "stressLevel",
       "restingHeartRate",

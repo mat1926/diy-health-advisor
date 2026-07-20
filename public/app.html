@@ -49,12 +49,16 @@
               </select>
             </label>
             <label>
-              Height (cm)
-              <input name="heightCm" type="number" min="100" max="250" required />
+              Height (ft)
+              <input name="heightFt" type="number" min="3" max="8" step="1" required inputmode="numeric" />
             </label>
             <label>
-              Weight (kg)
-              <input name="weightKg" type="number" min="30" max="300" step="0.1" required />
+              Height (in)
+              <input name="heightIn" type="number" min="0" max="11" step="1" required inputmode="numeric" value="0" />
+            </label>
+            <label>
+              Weight (lbs)
+              <input name="weightLb" type="number" min="66" max="660" step="0.1" required inputmode="decimal" />
             </label>
             <label>
               Activity level
