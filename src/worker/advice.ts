@@ -1,5 +1,10 @@
 import { bmi, MEDICAL_DISCLAIMER, type MetricsInput, type PlanId } from "./plans";
 import {
+  estimateLifeExpectancy,
+  LIFE_EXPECTANCY_DISCLAIMER,
+  type LifeExpectancyEstimate,
+} from "./lifeExpectancy";
+import {
   LENS_DISCLAIMER,
   PERSPECTIVES,
   pickHabits,
@@ -10,7 +15,9 @@ import {
 export type AdviceResult = {
   disclaimer: string;
   lensDisclaimer: string;
+  lifeExpectancyDisclaimer: string;
   perspective: { id: PerspectiveId; label: string; themes: string[] };
+  lifeExpectancy: LifeExpectancyEstimate | null;
   summary: string;
   actions: string[];
   watchouts: string[];
@@ -127,6 +134,13 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     actions.push("Break up long sitting with a 2–3 minute stand/walk every hour.");
   }
 
+  const lifeExpectancy = estimateLifeExpectancy(m);
+  if (lifeExpectancy && lifeExpectancy.comparison.yearsVsIdeal < -1) {
+    actions.push(
+      `Illustrative longevity gap vs ideal measurements: about ${Math.abs(lifeExpectancy.comparison.yearsVsIdeal)} years on this simple model — close it with sustainable habits, not crash diets.`,
+    );
+  }
+
   if (plan === "plus") {
     phNotes(m, actions, watchouts);
     if (typeof m.sleepHours === "number" && m.sleepHours < 6) {
@@ -154,11 +168,13 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   return {
     disclaimer: MEDICAL_DISCLAIMER,
     lensDisclaimer: LENS_DISCLAIMER,
+    lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
     perspective: {
       id: perspective.id,
       label: perspective.label,
       themes: perspective.themes,
     },
+    lifeExpectancy,
     summary: summaryParts.join(" — ") + ".",
     actions: [...new Set(actions)].slice(0, plan === "plus" ? 10 : 5),
     watchouts: [...new Set(watchouts)].slice(0, 8),
@@ -180,6 +196,7 @@ You MUST NOT diagnose, prescribe, cure, or claim to replace a licensed clinician
 Frame suggestions as educational habits inspired by themes often discussed in alternative/functional wellness education (${p.label}): ${p.themes.join("; ")}.
 Never claim affiliation with Dr. Berg, Dr. Ekberg, Dr. Axe, Dr. Jockers, Dr. Clark, or Jane Oelke / Natural Choices.
 If DIY saliva/urine pH is present, treat it as optional self-tracking for stress-pattern curiosity only — not disease diagnosis.
+Do not invent life-expectancy numbers; the app computes those separately.
 Return concise JSON only with keys: summary (string), actions (string[]), watchouts (string[]), whenToSeekCare (string[]).
 Plan tier: ${plan}
 Metrics JSON: ${JSON.stringify(m)}
@@ -228,7 +245,9 @@ export async function generateAdvice(
     return {
       disclaimer: MEDICAL_DISCLAIMER,
       lensDisclaimer: LENS_DISCLAIMER,
+      lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
       perspective: fallback.perspective,
+      lifeExpectancy: fallback.lifeExpectancy,
       summary: typeof parsed.summary === "string" ? parsed.summary : fallback.summary,
       actions: Array.isArray(parsed.actions) ? parsed.actions.map(String).slice(0, 10) : fallback.actions,
       watchouts: Array.isArray(parsed.watchouts)

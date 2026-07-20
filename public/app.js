@@ -113,6 +113,28 @@ async function boot() {
       } else {
         themesWrap.hidden = true;
       }
+
+      const lifeWrap = document.getElementById("out-life-wrap");
+      const le = data.lifeExpectancy;
+      if (le?.current && le?.ideal) {
+        lifeWrap.hidden = false;
+        document.getElementById("out-life-summary").textContent = le.comparison?.summary || "";
+        document.getElementById("out-life-current").textContent =
+          `~${le.current.expectedAge} yrs expected age`;
+        document.getElementById("out-life-current-detail").textContent =
+          `~${le.current.remainingYears} years remaining · BMI ${le.current.bmi ?? "—"} · adj ${le.current.adjustmentsYears >= 0 ? "+" : ""}${le.current.adjustmentsYears} yrs`;
+        document.getElementById("out-life-ideal").textContent =
+          `~${le.ideal.expectedAge} yrs expected age`;
+        document.getElementById("out-life-ideal-detail").textContent =
+          `~${le.ideal.remainingYears} years remaining · BMI ${le.ideal.bmi}` +
+          (le.ideal.idealWeightLb ? ` (~${le.ideal.idealWeightLb} lbs at your height)` : "");
+        fillList(document.getElementById("out-life-assumptions"), le.ideal.assumptions || []);
+        document.getElementById("out-life-disclaimer").textContent =
+          le.disclaimer || data.lifeExpectancyDisclaimer || "";
+      } else {
+        lifeWrap.hidden = true;
+      }
+
       fillList(document.getElementById("out-actions"), data.actions);
       fillList(document.getElementById("out-watchouts"), data.watchouts);
       fillList(document.getElementById("out-care"), data.whenToSeekCare);
