@@ -191,9 +191,21 @@ function multiItem(sex: MetricsInput["sex"]): FoodItem {
       notes: KIT_PRODUCTS.eve.url,
     };
   }
+  if (sex === "male") {
+    return {
+      name: "NOW ADAM men’s multi (kit)",
+      portion: "1 tablet with food",
+      kcal: 0,
+      proteinG: 0,
+      carbsG: 0,
+      fatG: 0,
+      kit: true,
+      notes: KIT_PRODUCTS.adam.url,
+    };
+  }
   return {
-    name: "NOW ADAM men’s multi (kit)",
-    portion: sex === "male" ? "1 tablet with food" : "1 tablet with food (confirm ADAM vs EVE by sex)",
+    name: "NOW ADAM or EVE multi (kit — pick one)",
+    portion: "1 serving with food (confirm ADAM vs EVE)",
     kcal: 0,
     proteinG: 0,
     carbsG: 0,
@@ -524,9 +536,19 @@ export function buildDetailedFoodPlan(
   const wheyProteinG = wheyScoops * WHEY_SCOOP_PROTEIN;
   const stackProteinG = alt ? wheyProteinG + stapleProteinG : wheyProteinG;
 
-  const sex = m.sex ?? "prefer_not";
-  const multiName = sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name;
-  const multiUrl = sex === "female" ? KIT_PRODUCTS.eve.url : KIT_PRODUCTS.adam.url;
+  const sex = m.sex;
+  const multiName =
+    sex === "female"
+      ? KIT_PRODUCTS.eve.name
+      : sex === "male"
+        ? KIT_PRODUCTS.adam.name
+        : "NOW ADAM or EVE (pick one — sex Other)";
+  const multiUrl =
+    sex === "female"
+      ? KIT_PRODUCTS.eve.url
+      : sex === "male"
+        ? KIT_PRODUCTS.adam.url
+        : KIT_PRODUCTS.adam.url;
 
   let meals = alt ? altKitOnlyTemplate(wheyScoops, sex) : cdcTemplate(wheyScoops, sex);
   if (!alt) {
@@ -836,7 +858,11 @@ export function buildDetailedFoodPlan(
   const shoppingList = alt
     ? [
         KIT_PRODUCTS.whey.name,
-        sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
+        sex === "female"
+          ? KIT_PRODUCTS.eve.name
+          : sex === "male"
+            ? KIT_PRODUCTS.adam.name
+            : "NOW ADAM or EVE (pick one)",
         KIT_PRODUCTS.d3.name,
         KIT_PRODUCTS.shaker.name,
         SHORTFALL_STAPLES.eggs.name,
@@ -855,7 +881,11 @@ export function buildDetailedFoodPlan(
       ]
     : [
         KIT_PRODUCTS.whey.name,
-        sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
+        sex === "female"
+          ? KIT_PRODUCTS.eve.name
+          : sex === "male"
+            ? KIT_PRODUCTS.adam.name
+            : "NOW ADAM or EVE (pick one)",
         KIT_PRODUCTS.d3.name,
         KIT_PRODUCTS.shaker.name,
         "Eggs",
@@ -905,7 +935,9 @@ export function buildDetailedFoodPlan(
             ? ` ${targets.fatStores.reservesShort}.`
             : ""
         } No calorie target.`
-      : `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s), ${sex === "female" ? "EVE" : "ADAM"}, and Vitamin D3.`,
+      : `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s), ${
+          sex === "female" ? "EVE" : sex === "male" ? "ADAM" : "ADAM or EVE"
+        }, and Vitamin D3.`,
     style: alt ? "alternative" : "cdc",
     kitBase: {
       wheyScoops,

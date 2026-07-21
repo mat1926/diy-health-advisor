@@ -67,6 +67,8 @@ export type AdviceResult = {
   /** Per-doctor recommendations matched to detected metric findings */
   doctorReview: DoctorMetricReview | null;
   summary: string;
+  /** Short labeled stats for the plan header chips. */
+  summaryChips: string[];
   actions: string[];
   watchouts: string[];
   whenToSeekCare: string[];
@@ -197,26 +199,23 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const lifeExpectancy = estimateLifeExpectancy(m);
 
   const summaryParts = [
-    "7-day DIY plan ready",
-    nutritionKit
-      ? `~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi · D3 · vitals kit`
-      : null,
-    weightProgress
-      ? `~${weightProgress.pace.weeklyLossLb} lb/week pace`
-      : null,
-    targets?.fatStores?.excessLb ? targets.fatStores.reservesShort : null,
-    doctorReview
-      ? `metric review: ${pluralCount(doctorReview.findings.length, "finding")} · ${pluralCount(doctorReview.summaries.length, "summary", "summaries")}`
-      : null,
-    targets
-      ? targets.priorityFocus === "alt_protein_micros"
-        ? `protein ${targets.macros.proteinG}g · micros`
-        : `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
-      : null,
-    `${perspective.shortName} · age ${m.age ?? "n/a"} · ${m.activityLevel ?? "n/a"} activity`,
-    bodyMass ? `BMI ≈ ${bodyMass}` : null,
+    "7-day DIY plan ready — Rest · Nutrition · Exercise",
+    `${perspective.shortName} · age ${m.age ?? "n/a"}`,
     "educational only",
   ].filter(Boolean);
+
+  const summaryChips = [
+    nutritionKit ? `~${nutritionKit.daily.wheyScoops} whey scoop(s)` : null,
+    targets
+      ? targets.priorityFocus === "alt_protein_micros"
+        ? `Protein ${targets.macros.proteinG}g`
+        : `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
+      : null,
+    weightProgress ? `~${weightProgress.pace.weeklyLossLb} lb/week pace` : null,
+    targets?.fatStores?.excessLb ? targets.fatStores.reservesShort : null,
+    bodyMass ? `BMI ${bodyMass}` : null,
+    m.activityLevel ? `${m.activityLevel} activity` : null,
+  ].filter(Boolean) as string[];
 
   const watchouts: string[] = [
     "Emergency: sudden chest pain, severe shortness of breath, fainting, confusion, or uncontrolled bleeding — call your local emergency number.",
@@ -292,6 +291,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     weightProgress,
     doctorReview,
     summary: summaryParts.join(" · ") + ".",
+    summaryChips,
     actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
     watchouts: [...new Set(watchouts)].slice(0, 6),
     whenToSeekCare: [
@@ -305,11 +305,6 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
 
 function uniquePush(items: string[], extra: string): string[] {
   return [...new Set([...items, extra])].slice(0, 6);
-}
-
-function pluralCount(n: number, singular: string, plural?: string): string {
-  const p = plural ?? `${singular}s`;
-  return `${n} ${n === 1 ? singular : p}`;
 }
 
 function parsePillar(
@@ -418,6 +413,7 @@ export async function generateAdvice(
       weightProgress: fallback.weightProgress,
       doctorReview: fallback.doctorReview,
       summary: typeof parsed.summary === "string" ? parsed.summary : fallback.summary,
+      summaryChips: fallback.summaryChips,
       actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
       watchouts: Array.isArray(parsed.watchouts)
         ? parsed.watchouts.map(String).slice(0, 8)

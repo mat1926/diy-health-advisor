@@ -15,7 +15,6 @@ function baseExpectancyAtBirth(sex: SexKey): number {
     case "male":
       return 75.8;
     case "other":
-    case "prefer_not":
     case "unknown":
     default:
       return 78.4;

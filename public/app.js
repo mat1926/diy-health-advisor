@@ -374,6 +374,16 @@ function fillFoodPlan(fp, disclaimer) {
     fp.disclaimer || disclaimer || "";
 }
 
+function softBmiCategory(bmi, category) {
+  if (category === "obesity") {
+    return `BMI ${bmi} · above the educational obesity cut-point (illustrative)`;
+  }
+  if (category === "overweight") {
+    return `BMI ${bmi} · above the educational healthy range (illustrative)`;
+  }
+  return `BMI ${bmi} · within educational range`;
+}
+
 function fillProgress(wp, disclaimer) {
   const wrap = document.getElementById("out-progress-wrap");
   if (!wp) {
@@ -386,7 +396,7 @@ function fillProgress(wp, disclaimer) {
   document.getElementById("out-progress-now").textContent =
     `${wp.current.weightLb} lb`;
   document.getElementById("out-progress-now-detail").textContent =
-    `BMI ${wp.current.bmi} · ${wp.current.category}`;
+    softBmiCategory(wp.current.bmi, wp.current.category);
   document.getElementById("out-progress-pace").textContent =
     `~${wp.pace.weeklyLossLb} lb/wk`;
   document.getElementById("out-progress-pace-detail").textContent =
@@ -429,6 +439,22 @@ function fillProgress(wp, disclaimer) {
 
 function renderAdviceResult(data) {
   document.getElementById("out-summary").textContent = data.summary;
+  const chipsEl = document.getElementById("out-summary-chips");
+  if (chipsEl) {
+    chipsEl.innerHTML = "";
+    const chips = data.summaryChips || [];
+    if (chips.length) {
+      chipsEl.hidden = false;
+      for (const chip of chips) {
+        const span = document.createElement("span");
+        span.className = "stat-chip";
+        span.textContent = chip;
+        chipsEl.appendChild(span);
+      }
+    } else {
+      chipsEl.hidden = true;
+    }
+  }
   document.getElementById("out-meta").textContent =
     `Source: ${data.source} · usage ${data.usage?.used}/${data.usage?.limit}`;
   const lens = document.getElementById("out-lens");
@@ -448,11 +474,6 @@ function renderAdviceResult(data) {
   } else {
     pillarsEl.hidden = true;
   }
-
-  fillNutritionKit(data.nutritionKit, data.nutritionKitDisclaimer);
-  fillFoodPlan(data.foodPlan, data.foodPlanDisclaimer);
-  fillProgress(data.weightProgress, data.progressDisclaimer);
-  applyAmazonAffiliateUi(data.associateTag, data.amazonAssociateDisclosure);
 
   const lifeWrap = document.getElementById("out-life-wrap");
   const le = data.lifeExpectancy;
@@ -476,6 +497,11 @@ function renderAdviceResult(data) {
     lifeWrap.hidden = true;
   }
 
+  fillProgress(data.weightProgress, data.progressDisclaimer);
+  fillNutritionKit(data.nutritionKit, data.nutritionKitDisclaimer);
+  fillFoodPlan(data.foodPlan, data.foodPlanDisclaimer);
+  applyAmazonAffiliateUi(data.associateTag, data.amazonAssociateDisclosure);
+
   fillList(document.getElementById("out-safety"), [
     ...(data.watchouts || []),
     ...(data.whenToSeekCare || []),
@@ -484,8 +510,8 @@ function renderAdviceResult(data) {
   if (safetyFoot) {
     const parts = [data.disclaimer, data.lensDisclaimer].filter(Boolean);
     safetyFoot.textContent = parts.join(" ");
-  }}
-
+  }
+}
 async function boot() {
   const form = document.getElementById("metrics-form");
   const badge = document.getElementById("plan-badge");
@@ -634,7 +660,7 @@ async function boot() {
       form.reportValidity();
       focusFirstInvalid();
       setFormStatus(
-        "Please fill required fields: age, height (ft + in), weight, activity, and goal.",
+        "Please fill required fields: age, sex, height (ft + in), weight, activity, and goal.",
         { isError: true },
       );
       return;
@@ -709,8 +735,9 @@ async function boot() {
       set("standingBpDiastolic", "84");
       set("salivaPh", "6.0");
       set("reviewDoctor", "all");
-      const perspective = form.elements.namedItem("perspective");
-      if (perspective) perspective.value = "alternative";
+      setFormStatus(
+        "Demo loaded: high seated BP, orthostatic drop, and low saliva pH. Plan style unchanged.",
+      );
     });
   }
 }

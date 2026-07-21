@@ -199,10 +199,10 @@ export function buildNutritionKitPlan(
   const waterLiters = targets.macros.waterLiters;
   const shakerFills = Math.max(1, Math.ceil((waterLiters * 33.814) / SHAKE_FLUID_OZ));
 
-  const sex = m.sex ?? "prefer_not";
+  const sex = m.sex;
   const useEve = sex === "female";
   const useAdam = sex === "male";
-  const multiUnclear = !useEve && !useAdam;
+  const multiUnclear = sex === "other" || !sex;
 
   const products: NutritionKitPlan["products"] = [
     {
@@ -234,13 +234,13 @@ export function buildNutritionKitPlan(
   } else {
     products.push({
       ...KIT_PRODUCTS.adam,
-      howToUse: "Sex not specified — do not guess. Prefer ADAM only if male-typical needs apply.",
-      caution: "If you need a women’s formula with iron, use EVE instead after clinician/input clarity.",
+      howToUse: "Sex marked Other — choose ADAM only if a men’s (non-iron) multi fits your needs.",
+      caution: "If you need a women’s formula with iron, use EVE instead. Do not take both.",
     });
     products.push({
       ...KIT_PRODUCTS.eve,
-      howToUse: "Sex not specified — EVE is the iron-containing women’s option when appropriate.",
-      caution: "Pick one multi aligned with your sex/clinician advice — do not double up.",
+      howToUse: "Sex marked Other — EVE is the iron-containing women’s option when appropriate.",
+      caution: "Pick one multi with clinician advice — do not double up.",
     });
   }
 
@@ -360,12 +360,12 @@ export function buildNutritionKitPlan(
       ? "Multi: EVE with a meal (label dose)."
       : useAdam
         ? "Multi: ADAM 1 tablet with a meal."
-        : "Multi: choose ADAM or EVE after clarifying sex/clinician advice.",
+        : "Multi: sex is Other — pick ADAM or EVE (not both) with clinician advice.",
     "Measure: RENPHO scale (weight) · pH strips (saliva) · Multistix 10 SG · RENPHO BP (seated/standing + pulse) when logging vitals.",
   );
 
   if (multiUnclear) {
-    sampleDay.push("Set sex in the form for a cleaner ADAM vs EVE recommendation next run.");
+    sampleDay.push("Confirm which multi (ADAM vs EVE) fits you before stocking both.");
   }
 
   return {

@@ -45,8 +45,8 @@
             </label>
             <label>
               Sex
-              <select name="sex">
-                <option value="prefer_not">Prefer not to say</option>
+              <select name="sex" required>
+                <option value="" disabled selected>Select…</option>
                 <option value="female">Female</option>
                 <option value="male">Male</option>
                 <option value="other">Other</option>
@@ -272,12 +272,48 @@
         </form>
 
         <div class="result" id="result" hidden>
-          <article class="panel">
-            <h3>Your plan</h3>
-            <p id="out-summary"></p>
-            <p class="muted" id="out-meta"></p>
+          <article class="panel" id="out-plan-header">
+            <div class="plan-header-row">
+              <h3 style="margin: 0">Your plan</h3>
+              <a class="btn btn-ghost" href="#metrics-form" id="btn-edit-inputs">Edit inputs</a>
+            </div>
+            <p id="out-summary" class="muted" style="margin-top: 0.5rem"></p>
+            <div class="stat-chips" id="out-summary-chips" hidden></div>
+            <p class="muted" id="out-meta" style="margin-top: 0.65rem"></p>
             <p class="badge" id="out-lens" hidden></p>
+            <nav class="plan-toc muted" id="out-plan-toc" aria-label="Plan sections">
+              <a href="#out-pillars">Plan cards</a>
+              <a href="#out-life-wrap">Life expectancy</a>
+              <a href="#out-progress-wrap">Weight forecast</a>
+              <a href="#out-kit-wrap">Nutrition kit</a>
+              <a href="#out-food-wrap">Food plan</a>
+              <a href="#out-safety-wrap">Safety</a>
+            </nav>
           </article>
+
+          <div class="pillars" id="out-pillars" hidden>
+            <p class="pillars-intro muted">Your 7-day Rest · Nutrition · Exercise focus.</p>
+            <div class="pillars-grid">
+              <article class="panel pillar-card" data-pillar="rest">
+                <p class="badge">Rest</p>
+                <h3 id="out-rest-focus"></h3>
+                <p class="muted" id="out-rest-target"></p>
+                <ul id="out-rest-items"></ul>
+              </article>
+              <article class="panel pillar-card" data-pillar="nutrition">
+                <p class="badge">Nutrition</p>
+                <h3 id="out-nutrition-focus"></h3>
+                <p class="muted" id="out-nutrition-target"></p>
+                <ul id="out-nutrition-items"></ul>
+              </article>
+              <article class="panel pillar-card" data-pillar="exercise">
+                <p class="badge">Exercise</p>
+                <h3 id="out-exercise-focus"></h3>
+                <p class="muted" id="out-exercise-target"></p>
+                <ul id="out-exercise-items"></ul>
+              </article>
+            </div>
+          </div>
 
           <article class="panel" id="out-life-wrap" hidden>
             <h3>Life expectancy (illustrative)</h3>
@@ -348,30 +384,6 @@
             </div>
             <p class="muted" id="out-progress-disclaimer" style="margin-top: 1rem; font-size: 0.85rem"></p>
           </article>
-
-          <div class="pillars" id="out-pillars" hidden>
-            <p class="pillars-intro muted">After your demographics, here is a detailed 7-day DIY plan.</p>
-            <div class="pillars-grid">
-              <article class="panel pillar-card" data-pillar="rest">
-                <p class="badge">Rest</p>
-                <h3 id="out-rest-focus"></h3>
-                <p class="muted" id="out-rest-target"></p>
-                <ul id="out-rest-items"></ul>
-              </article>
-              <article class="panel pillar-card" data-pillar="nutrition">
-                <p class="badge">Nutrition</p>
-                <h3 id="out-nutrition-focus"></h3>
-                <p class="muted" id="out-nutrition-target"></p>
-                <ul id="out-nutrition-items"></ul>
-              </article>
-              <article class="panel pillar-card" data-pillar="exercise">
-                <p class="badge">Exercise</p>
-                <h3 id="out-exercise-focus"></h3>
-                <p class="muted" id="out-exercise-target"></p>
-                <ul id="out-exercise-items"></ul>
-              </article>
-            </div>
-          </div>
 
           <article class="panel" id="out-kit-wrap" hidden>
             <h3 id="out-kit-title">Nutrition Kit plan</h3>

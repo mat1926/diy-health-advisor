@@ -92,7 +92,7 @@ export const PLAN_LIMITS = {
 
 export type MetricsInput = {
   age?: number;
-  sex?: "female" | "male" | "other" | "prefer_not";
+  sex?: "female" | "male" | "other";
   heightCm?: number;
   weightKg?: number;
   activityLevel?: "sedentary" | "light" | "moderate" | "active" | "very_active";
@@ -224,7 +224,7 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
     if (weightKg != null) out.weightKg = weightKg;
   }
 
-  str("sex", ["female", "male", "other", "prefer_not"] as const);
+  str("sex", ["female", "male", "other"] as const);
   str("activityLevel", ["sedentary", "light", "moderate", "active", "very_active"] as const);
   str("primaryGoal", ["energy", "sleep", "weight", "strength", "stress", "general"] as const);
 
@@ -248,6 +248,7 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
 
 export function requireBasicMetrics(m: MetricsInput): string | null {
   if (!m.age) return "Age is required.";
+  if (!m.sex) return "Sex is required.";
   if (!m.heightCm) return "Height is required.";
   if (!m.weightKg) return "Weight is required.";
   if (!m.activityLevel) return "Activity level is required.";
