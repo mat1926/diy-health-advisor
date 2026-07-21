@@ -74,7 +74,6 @@ function fillTargets(t, disclaimer) {
     { name: "Fiber", amount: t.macros.fiberG, unit: "g", note: "Educational daily fiber target" },
     { name: "Water", amount: t.macros.waterLiters, unit: "L", note: "Rough fluid target from body weight" },
   ];
-  // macros table uses note as third col — remap header says % kcal for col3 which works
   const tbody = document.querySelector("#out-t-macros tbody");
   tbody.innerHTML = "";
   for (const row of macroBody) {
@@ -89,6 +88,47 @@ function fillTargets(t, disclaimer) {
   fillList(document.getElementById("out-t-ex-examples"), t.exercise.examples || []);
   document.getElementById("out-targets-disclaimer").textContent =
     t.disclaimer || disclaimer || "";
+}
+
+function fillNutritionKit(kit, disclaimer) {
+  const wrap = document.getElementById("out-kit-wrap");
+  if (!kit) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  document.getElementById("out-kit-title").textContent = kit.title || "Nutrition Kit plan";
+  document.getElementById("out-kit-summary").textContent = kit.summary || "";
+  document.getElementById("out-kit-protein").textContent = `${kit.daily.proteinTargetG} g`;
+  document.getElementById("out-kit-protein-detail").textContent =
+    `Food ~${kit.daily.proteinFromFoodG}g + whey ~${kit.daily.proteinFromWheyG}g · ${kit.daily.caloriesTarget} kcal/day`;
+  document.getElementById("out-kit-whey").textContent = `${kit.daily.wheyScoops} scoop(s)`;
+  document.getElementById("out-kit-whey-detail").textContent = "Confirm grams on your whey label";
+  document.getElementById("out-kit-fluid").textContent = `~${kit.daily.waterLiters} L`;
+  document.getElementById("out-kit-fluid-detail").textContent =
+    `~${kit.daily.shakerFills}× 24 oz Strada fills (rough)`;
+
+  const prod = document.getElementById("out-kit-products");
+  prod.innerHTML = "";
+  for (const p of kit.products || []) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = p.url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = p.name;
+    li.appendChild(a);
+    li.appendChild(document.createTextNode(` — ${p.howToUse}`));
+    if (p.caution) {
+      li.appendChild(document.createTextNode(` Caution: ${p.caution}`));
+    }
+    prod.appendChild(li);
+  }
+  fillList(document.getElementById("out-kit-schedule"), kit.schedule || []);
+  fillList(document.getElementById("out-kit-sample"), kit.sampleDay || []);
+  fillList(document.getElementById("out-kit-gaps"), kit.gaps || []);
+  document.getElementById("out-kit-disclaimer").textContent =
+    kit.disclaimer || disclaimer || "";
 }
 
 async function boot() {
@@ -190,6 +230,7 @@ async function boot() {
       }
 
       fillTargets(data.targets, data.targetsDisclaimer);
+      fillNutritionKit(data.nutritionKit, data.nutritionKitDisclaimer);
 
       const themesWrap = document.getElementById("out-themes-wrap");
       if (data.perspective?.themes?.length) {

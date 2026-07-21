@@ -17,18 +17,26 @@ import {
   type PillarsPlan,
 } from "./pillars";
 import { buildDetailedTargets, TARGETS_DISCLAIMER, type DetailedTargets } from "./targets";
+import {
+  buildNutritionKitPlan,
+  NUTRITION_KIT_DISCLAIMER,
+  type NutritionKitPlan,
+} from "./nutritionKit";
 
 export type AdviceResult = {
   disclaimer: string;
   lensDisclaimer: string;
   lifeExpectancyDisclaimer: string;
   targetsDisclaimer: string;
+  nutritionKitDisclaimer: string;
   perspective: { id: PerspectiveId; label: string; themes: string[] };
   lifeExpectancy: LifeExpectancyEstimate | null;
   /** Detailed 7-day DIY plan shown after demographics are submitted */
   pillars: PillarsPlan;
   /** Numeric sleep / calorie / exercise / nutrition targets */
   targets: DetailedTargets | null;
+  /** Concrete plan using the Amazon whey/shaker/multi/D3 kit */
+  nutritionKit: NutritionKitPlan | null;
   summary: string;
   actions: string[];
   watchouts: string[];
@@ -91,10 +99,14 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const perspective = PERSPECTIVES[perspectiveId];
   const pillars = buildPillars(plan, m);
   const targets = buildDetailedTargets(m);
+  const nutritionKit = buildNutritionKitPlan(m, targets);
   const lifeExpectancy = estimateLifeExpectancy(m);
 
   const summaryParts = [
     `7-day DIY plan ready (Rest · Nutrition · Exercise)`,
+    nutritionKit
+      ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · D3 clinician-gated`
+      : null,
     targets
       ? `targets: sleep ${targets.sleep.hoursTarget}h · ${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
       : null,
@@ -140,11 +152,19 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     pillars.exercise.weeklyTarget = `~${targets.exercise.dailyBurnTargetKcal} kcal/day movement burn · ~${targets.exercise.weeklyBurnTargetKcal} kcal/week`;
   }
 
+  if (nutritionKit && nutritionKit.daily.wheyScoops > 0) {
+    pillars.nutrition.items = uniquePush(
+      pillars.nutrition.items,
+      `Nutrition Kit: about ${nutritionKit.daily.wheyScoops} whey scoop(s)/day in the Strada to help reach ~${nutritionKit.daily.proteinTargetG}g protein.`,
+    );
+  }
+
   return {
     disclaimer: MEDICAL_DISCLAIMER,
     lensDisclaimer: LENS_DISCLAIMER,
     lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
     targetsDisclaimer: TARGETS_DISCLAIMER,
+    nutritionKitDisclaimer: NUTRITION_KIT_DISCLAIMER,
     perspective: {
       id: perspective.id,
       label: perspective.label,
@@ -153,6 +173,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     lifeExpectancy,
     pillars,
     targets,
+    nutritionKit,
     summary: summaryParts.join(" — ") + ".",
     actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
     watchouts: [...new Set(watchouts)].slice(0, 8),
@@ -160,6 +181,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
       "New or worsening symptoms, unexplained weight change, chest pain, or mood crisis.",
       "Before pregnancy-related changes, surgery recovery, chronic disease management, or any cleanse/fast beyond gentle meal timing.",
       "Urinary pain, fever, or blood in urine — seek clinical care (DIY pH strips are not enough).",
+      "Before high-dose vitamin D or iron-containing multis if you have kidney disease, hypercalcemia, or hemochromatosis risk — ask a clinician.",
     ],
     plan,
     source: "template",
@@ -263,6 +285,8 @@ export async function generateAdvice(
       lifeExpectancy: fallback.lifeExpectancy,
       pillars,
       targets: fallback.targets,
+      nutritionKit: fallback.nutritionKit,
+      nutritionKitDisclaimer: NUTRITION_KIT_DISCLAIMER,
       summary: typeof parsed.summary === "string" ? parsed.summary : fallback.summary,
       actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
       watchouts: Array.isArray(parsed.watchouts)

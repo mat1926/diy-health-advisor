@@ -7,7 +7,8 @@ DIY health metrics → AI-enhanced wellness guidance, with hard medical disclaim
 
 Mobile (Android + iPhone) roadmap: [docs/MOBILE-APPS.md](docs/MOBILE-APPS.md)  
 Usability expansion options: [docs/USABILITY-OPTIONS.md](docs/USABILITY-OPTIONS.md)  
-Rest · Nutrition · Exercise plan: [docs/REST-NUTRITION-EXERCISE-PLAN.md](docs/REST-NUTRITION-EXERCISE-PLAN.md)
+Rest · Nutrition · Exercise plan: [docs/REST-NUTRITION-EXERCISE-PLAN.md](docs/REST-NUTRITION-EXERCISE-PLAN.md)  
+Amazon kit coverage (whey/multi/D3): [docs/AMAZON-KIT-PLAN.md](docs/AMAZON-KIT-PLAN.md)
 
 ## What it does
 
