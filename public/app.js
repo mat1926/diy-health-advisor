@@ -61,16 +61,20 @@ function fillTargets(t, disclaimer) {
   document.getElementById("out-t-sleep-detail").textContent =
     `Band ${t.sleep.hoursMin}–${t.sleep.hoursMax} hrs / night`;
 
+  const altProtein = t.priorityFocus === "alt_protein_micros";
   const calBadge = document.getElementById("out-t-cal-badge");
-  if (calBadge) calBadge.textContent = "Protein goal";
-  document.getElementById("out-t-cal").textContent = `${t.macros.proteinG} g`;
-  const calDetail =
-    t.priorityFocus === "alt_protein_micros"
-      ? t.calories.fromFatStoresKcal && t.calories.fromFatStoresKcal > 0
+  if (calBadge) calBadge.textContent = altProtein ? "Protein goal" : "Calories";
+  if (altProtein) {
+    document.getElementById("out-t-cal").textContent = `${t.macros.proteinG} g`;
+    document.getElementById("out-t-cal-detail").textContent =
+      t.calories.fromFatStoresKcal && t.calories.fromFatStoresKcal > 0
         ? `Primary goal · food ~${t.calories.dailyTarget} kcal · from fat stores ~${t.calories.fromFatStoresKcal} · TDEE ~${t.calories.tdee}`
-        : `Primary goal · food ~${t.calories.dailyTarget} kcal · TDEE ~${t.calories.tdee}`
-      : `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · food ~${t.calories.dailyTarget} kcal · ${t.calories.goalAdjustment}`;
-  document.getElementById("out-t-cal-detail").textContent = calDetail;
+        : `Primary goal · food ~${t.calories.dailyTarget} kcal · TDEE ~${t.calories.tdee}`;
+  } else {
+    document.getElementById("out-t-cal").textContent = `${t.calories.dailyTarget} kcal`;
+    document.getElementById("out-t-cal-detail").textContent =
+      `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`;
+  }
   const intro = document.getElementById("out-targets-intro");
   if (intro) {
     intro.textContent = t.priorityNote || t.fatStores?.summary ||
@@ -141,7 +145,7 @@ function fillNutritionKit(kit, disclaimer) {
   document.getElementById("out-kit-summary").textContent = kit.summary || "";
   document.getElementById("out-kit-protein").textContent = `${kit.daily.proteinTargetG} g`;
   document.getElementById("out-kit-protein-detail").textContent =
-    `Food ~${kit.daily.proteinFromFoodG}g + whey ~${kit.daily.proteinFromWheyG}g (protein is the kit goal)`;
+    `Food ~${kit.daily.proteinFromFoodG}g + whey ~${kit.daily.proteinFromWheyG}g · ${kit.daily.caloriesTarget} kcal/day`;
   document.getElementById("out-kit-whey").textContent = `${kit.daily.wheyScoops} scoop(s)`;
   document.getElementById("out-kit-whey-detail").textContent = "Confirm grams on your whey label";
   document.getElementById("out-kit-fluid").textContent = `~${kit.daily.waterLiters} L`;
@@ -198,12 +202,27 @@ function fillFoodPlan(fp, disclaimer) {
     document.getElementById("out-food-kit").textContent =
       `Kit base: ${fp.kitBase?.wheyScoops ?? 0} whey scoop(s) (~${fp.kitBase?.wheyProteinG ?? 0}g protein · ~${fp.kitBase?.wheyKcal ?? 0} kcal) · ${fp.kitBase?.multi || "multi"} · ${fp.kitBase?.d3Note || ""}`;
   }
-  document.getElementById("out-food-kcal").textContent = `${fp.dayTotals.kcal} kcal`;
-  document.getElementById("out-food-kcal-detail").textContent =
-    `Target ${fp.targets.kcal} · hit ${fp.macroHit.kcalPctOfTarget}%`;
-  document.getElementById("out-food-protein").textContent = `${fp.dayTotals.proteinG} g`;
-  document.getElementById("out-food-protein-detail").textContent =
-    `Target ${fp.targets.proteinG}g · hit ${fp.macroHit.proteinPctOfTarget}%`;
+  const altFood =
+    fp.priorityGoals?.mode === "alt_protein_micros" || fp.style === "alternative";
+  if (altFood) {
+    document.getElementById("out-food-primary-badge").textContent = "Protein goal";
+    document.getElementById("out-food-primary-stat").textContent = `${fp.dayTotals.proteinG} g`;
+    document.getElementById("out-food-primary-detail").textContent =
+      `Target ${fp.targets.proteinG}g · hit ${fp.macroHit.proteinPctOfTarget}%`;
+    document.getElementById("out-food-secondary-badge").textContent = "Day food kcal";
+    document.getElementById("out-food-secondary-stat").textContent = `${fp.dayTotals.kcal} kcal`;
+    document.getElementById("out-food-secondary-detail").textContent =
+      `Target ${fp.targets.kcal} · hit ${fp.macroHit.kcalPctOfTarget}%`;
+  } else {
+    document.getElementById("out-food-primary-badge").textContent = "Day kcal";
+    document.getElementById("out-food-primary-stat").textContent = `${fp.dayTotals.kcal} kcal`;
+    document.getElementById("out-food-primary-detail").textContent =
+      `Target ${fp.targets.kcal} · hit ${fp.macroHit.kcalPctOfTarget}%`;
+    document.getElementById("out-food-secondary-badge").textContent = "Protein";
+    document.getElementById("out-food-secondary-stat").textContent = `${fp.dayTotals.proteinG} g`;
+    document.getElementById("out-food-secondary-detail").textContent =
+      `Target ${fp.targets.proteinG}g · hit ${fp.macroHit.proteinPctOfTarget}%`;
+  }
   document.getElementById("out-food-cf").textContent =
     `${fp.dayTotals.carbsG}g / ${fp.dayTotals.fatG}g`;
   document.getElementById("out-food-cf-detail").textContent =

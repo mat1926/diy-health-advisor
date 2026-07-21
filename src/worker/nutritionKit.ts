@@ -183,17 +183,26 @@ export function buildNutritionKitPlan(
     "Evening: finish remaining food protein/carbs/fat toward calorie & macro targets from the app.",
   ];
 
-  const sampleDay = [
-    `Protein goal ≈ ${proteinTargetG}g → food ~${proteinFromFoodG}g + whey ~${proteinFromWheyG}g.`,
-    `Food energy ≈ ${targets.calories.dailyTarget} kcal (supporting, not the primary goal on Alternative).`,
-    `Carbs ≈ ${targets.macros.carbsG}g · Fat ≈ ${targets.macros.fatG}g · Fiber ≈ ${targets.macros.fiberG}g (from meals, not the kit).`,
+  const altKit = targets.priorityFocus === "alt_protein_micros";
+  const sampleDay = altKit
+    ? [
+        `Protein goal ≈ ${proteinTargetG}g → food ~${proteinFromFoodG}g + whey ~${proteinFromWheyG}g.`,
+        `Food energy ≈ ${targets.calories.dailyTarget} kcal (supporting, not the primary goal on Alternative).`,
+        `Carbs ≈ ${targets.macros.carbsG}g · Fat ≈ ${targets.macros.fatG}g · Fiber ≈ ${targets.macros.fiberG}g (from meals, not the kit).`,
+      ]
+    : [
+        `Calories target ≈ ${targets.calories.dailyTarget} kcal (educational).`,
+        `Protein ≈ ${proteinTargetG}g → food ~${proteinFromFoodG}g + whey ~${proteinFromWheyG}g.`,
+        `Carbs ≈ ${targets.macros.carbsG}g · Fat ≈ ${targets.macros.fatG}g · Fiber ≈ ${targets.macros.fiberG}g (from meals, not the kit).`,
+      ];
+  sampleDay.push(
     useEve
       ? "Multi: EVE with a meal (label dose)."
       : useAdam
         ? "Multi: ADAM 1 tablet with a meal."
         : "Multi: choose ADAM or EVE after clarifying sex/clinician advice.",
     "Measure: RENPHO scale (weight) · pH strips (saliva) · RENPHO BP (seated/standing + pulse) when logging vitals.",
-  ];
+  );
 
   if (multiUnclear) {
     sampleDay.push("Set sex in the form for a cleaner ADAM vs EVE recommendation next run.");
