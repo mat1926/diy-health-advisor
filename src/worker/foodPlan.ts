@@ -241,6 +241,19 @@ function organicGreekYogurt(): FoodItem {
   };
 }
 
+function coralCalciumItem(): FoodItem {
+  return {
+    name: KIT_PRODUCTS.coralCalcium.name,
+    portion: "As labeled with food",
+    kcal: 0,
+    proteinG: 0,
+    carbsG: 0,
+    fatG: 0,
+    kit: true,
+    notes: KIT_PRODUCTS.coralCalcium.url,
+  };
+}
+
 function magGlycinateItem(): FoodItem {
   return {
     name: KIT_PRODUCTS.magGlycinate.name,
@@ -287,6 +300,7 @@ function altKitOnlyTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock
     d3Softgel(),
     regenerativeEggs(),
     magGlycinateItem(),
+    coralCalciumItem(),
   ];
   const shakeScoops = Math.min(scoops, 3);
   if (shakeScoops >= 1) morning.push(wheyShake(shakeScoops));
@@ -302,7 +316,7 @@ function altKitOnlyTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock
   return [
     {
       name: "Kit + stack — morning",
-      timeHint: "Multi · D3 · eggs · Mg · whey",
+      timeHint: "Multi · D3 · eggs · Mg · coral calcium · whey",
       items: morning,
       totals: sumItems(morning),
     },
@@ -356,6 +370,7 @@ const SHORTFALL_SUGGESTIONS: Record<string, string[]> = {
     "Liver (occasional)",
   ],
   Calcium: [
+    `${KIT_PRODUCTS.coralCalcium.name} as labeled`,
     `${SHORTFALL_STAPLES.greekYogurt.name} (${SHORTFALL_STAPLES.greekYogurt.portion})`,
     "Cheese",
     "Canned sardines with bones",
@@ -551,6 +566,7 @@ export function buildDetailedFoodPlan(
       `${SHORTFALL_STAPLES.greekYogurt.name} (${SHORTFALL_STAPLES.greekYogurt.portion}) ≈ ${SHORTFALL_STAPLES.greekYogurt.proteinG}g protein + calcium/potassium support.`,
       `Stack protein total ≈ ${stackProteinG}g vs goal ~${proteinTarget}g (${pct(stackProteinG, proteinTarget)}%).`,
       `${KIT_PRODUCTS.magGlycinate.name}: ~200 mg Mg to close magnesium shortfall after multi.`,
+      `${KIT_PRODUCTS.coralCalcium.name}: labeled calcium to close calcium shortfall with yogurt.`,
       `${KIT_PRODUCTS.potassiumBicarb.name}: labeled use toward remaining potassium (kidney/med caution).`,
       `${KIT_PRODUCTS.traceMinerals.name}: Mg/K/trace support in water as labeled.`,
     );
@@ -636,8 +652,9 @@ export function buildDetailedFoodPlan(
         fromPlan = Math.min(min.amount, min.amount * 0.45 + 200 + 50);
         fromMulti = `${KIT_PRODUCTS.magGlycinate.name} + ${KIT_PRODUCTS.traceMinerals.name} + multi`;
       } else if (isCa) {
-        fromPlan = Math.min(min.amount, 200 + min.amount * 0.4);
-        fromMulti = `${SHORTFALL_STAPLES.greekYogurt.name} + multi`;
+        // yogurt ~200 mg + coral calcium as labeled (~400–600 educational) + multi
+        fromPlan = Math.min(min.amount, min.amount * 0.95);
+        fromMulti = `${KIT_PRODUCTS.coralCalcium.name} + ${SHORTFALL_STAPLES.greekYogurt.name} + multi`;
       } else if (isSe) {
         fromPlan = min.amount;
         fromMulti = `${SHORTFALL_STAPLES.eggs.name} + multi`;
@@ -765,7 +782,7 @@ export function buildDetailedFoodPlan(
 
   const kitGapSummary = alt
     ? [
-        "Alternative shortfall stack: increased whey + organic regenerative eggs + organic Greek yogurt + K bicarbonate + Mg glycinate + trace minerals. No calorie target.",
+        "Alternative shortfall stack: increased whey + organic regenerative eggs + organic Greek yogurt + coral calcium + K bicarbonate + Mg glycinate + trace minerals. No calorie target.",
         `Protein from stack ≈ ${stackProteinG}g of ~${proteinTarget}g goal (${pct(stackProteinG, proteinTarget)}%).`,
         ...shortfallStackEvaluation.slice(0, 3),
         shortfalls.length > 0
@@ -818,6 +835,7 @@ export function buildDetailedFoodPlan(
         KIT_PRODUCTS.potassiumBicarb.name,
         KIT_PRODUCTS.traceMinerals.name,
         KIT_PRODUCTS.magGlycinate.name,
+        KIT_PRODUCTS.coralCalcium.name,
         KIT_PRODUCTS.phStrips.name,
         KIT_PRODUCTS.renphoBp.name,
         KIT_PRODUCTS.renphoScale.name,
@@ -841,7 +859,7 @@ export function buildDetailedFoodPlan(
 
   const prepTips = alt
     ? [
-        "Shortfall stack: increased whey + regenerative eggs + organic Greek yogurt + Mg glycinate + potassium bicarbonate + trace mineral drops.",
+        "Shortfall stack: increased whey + regenerative eggs + organic Greek yogurt + coral calcium + Mg glycinate + potassium bicarbonate + trace mineral drops.",
         `Mix ~${wheyScoops} whey scoop(s)/day in the Strada; eat ${SHORTFALL_STAPLES.eggs.portion} eggs and ${SHORTFALL_STAPLES.greekYogurt.portion} yogurt.`,
         shortfalls.length
           ? `After the stack, ${shortfalls.length} shortfall(s) may remain — see table.`
@@ -866,10 +884,10 @@ export function buildDetailedFoodPlan(
       ? `Alternative shortfall-stack plan: increased whey + regenerative eggs + organic Greek yogurt + mineral add-ons with NOW multi/D3. Educational only. ${VITAMIN_D_OVERLOAD_NOTICE}`
       : `${FOOD_PLAN_DISCLAIMER} ${VITAMIN_D_OVERLOAD_NOTICE}`,
     title: alt
-      ? "Alternative shortfall stack (whey · eggs · yogurt · K · Mg · traces)"
+      ? "Alternative shortfall stack (whey · eggs · yogurt · Ca · K · Mg · traces)"
       : "Detailed itemized food plan (CDC-style · kit-based)",
     summary: alt
-      ? `Stack: ~${wheyScoops} whey scoop(s) + eggs + yogurt ≈ ${stackProteinG}g protein toward ~${proteinTarget}g; Mg glycinate + potassium bicarbonate + trace minerals for mineral gaps. ${
+      ? `Stack: ~${wheyScoops} whey scoop(s) + eggs + yogurt ≈ ${stackProteinG}g protein toward ~${proteinTarget}g; coral calcium + Mg glycinate + potassium bicarbonate + trace minerals for mineral gaps. ${
           shortfalls.length
             ? `${shortfalls.length} nutrient(s) still short — see evaluation.`
             : "Modeled primary targets covered (verify labels)."

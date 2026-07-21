@@ -93,6 +93,12 @@ export const KIT_PRODUCTS = {
     url: "https://www.amazon.com/dp/B07NWMVMT1",
     role: "Close magnesium shortfall with a gentle glycinate form",
   },
+  coralCalcium: {
+    asin: "B0013OSM5W",
+    name: "NOW Coral Calcium Plus (250 veg capsules)",
+    url: "https://www.amazon.com/dp/B0013OSM5W",
+    role: "Close calcium shortfall; educational bone/pH support",
+  },
 } as const satisfies Record<string, KitProduct>;
 
 /** Staple foods used with the kit to close Alternative shortfalls (not a full menu). */
@@ -263,6 +269,13 @@ export function buildNutritionKitPlan(
       howToUse: "Typically 1–2 tablets (100–200 mg elemental Mg as labeled) to close magnesium shortfall after multi + food.",
       caution: "Excess magnesium may loosen stools — reduce dose if that happens.",
     });
+    products.push({
+      ...KIT_PRODUCTS.coralCalcium,
+      howToUse:
+        "Take as labeled with food to close calcium shortfall alongside organic Greek yogurt. Do not stack with other high-dose calcium without clinician advice.",
+      caution:
+        "Too much calcium can cause constipation, kidney stones, or high blood calcium — stop and seek care if severe abdominal pain, confusion, or unusual thirst/urination.",
+    });
   }
 
   const schedule = [
@@ -270,7 +283,7 @@ export function buildNutritionKitPlan(
     "Vitamin D3 (kit): take with a meal that includes some fat — follow clinician guidance on how often for this 10,000 IU potency.",
     ...(altKit
       ? [
-          `Shortfall stack: ${SHORTFALL_STAPLES.eggs.portion} regenerative eggs · ${SHORTFALL_STAPLES.greekYogurt.portion} organic Greek yogurt · Mg glycinate · K bicarbonate · trace minerals.`,
+          `Shortfall stack: ${SHORTFALL_STAPLES.eggs.portion} regenerative eggs · ${SHORTFALL_STAPLES.greekYogurt.portion} organic Greek yogurt · Mg glycinate · coral calcium · K bicarbonate · trace minerals.`,
         ]
       : []),
     "Optional: saliva pH strip mid-morning → log in VitalGauge.",
@@ -288,7 +301,7 @@ export function buildNutritionKitPlan(
   const sampleDay = altKit
     ? [
         `Protein goal ≈ ${proteinTargetG}g → eggs+yogurt ~${proteinFromFoodG}g + increased whey ~${proteinFromWheyG}g.`,
-        `Mineral stack: Mg glycinate + potassium bicarbonate + trace mineral drops (as labeled).`,
+        `Mineral stack: Mg glycinate + coral calcium + potassium bicarbonate + trace mineral drops (as labeled).`,
         `Carbs / fat: flexible — no calorie target on Alternative.`,
         `Vitamin D: kit NOW D3 included — discontinue if overload symptoms appear.`,
       ]
