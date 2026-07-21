@@ -5,7 +5,7 @@ import {
   type LifeExpectancyEstimate,
 } from "./lifeExpectancy";
 import {
-  LENS_DISCLAIMER,
+  lensDisclaimerFor,
   PERSPECTIVES,
   CDC_NOTE,
   resolvePerspective,
@@ -16,7 +16,11 @@ import {
   pillarsToActions,
   type PillarsPlan,
 } from "./pillars";
-import { buildDetailedTargets, TARGETS_DISCLAIMER, type DetailedTargets } from "./targets";
+import {
+  buildDetailedTargets,
+  targetsDisclaimerFor,
+  type DetailedTargets,
+} from "./targets";
 import {
   buildNutritionKitPlan,
   NUTRITION_KIT_DISCLAIMER,
@@ -179,7 +183,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const watchouts: string[] = [
     "Sudden chest pain, severe shortness of breath, fainting, confusion, or uncontrolled bleeding need emergency care.",
     "Do not start/stop prescription medication, herbs, or cleanses based on this tool alone.",
-    LENS_DISCLAIMER,
+    lensDisclaimerFor(perspectiveId),
   ];
   if (perspectiveId === "cdc") {
     watchouts.push(CDC_NOTE);
@@ -222,9 +226,9 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
 
   return {
     disclaimer: MEDICAL_DISCLAIMER,
-    lensDisclaimer: LENS_DISCLAIMER,
+    lensDisclaimer: lensDisclaimerFor(perspectiveId),
     lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
-    targetsDisclaimer: TARGETS_DISCLAIMER,
+    targetsDisclaimer: targetsDisclaimerFor(perspectiveId),
     nutritionKitDisclaimer: NUTRITION_KIT_DISCLAIMER,
     perspective: {
       id: perspective.id,
@@ -269,12 +273,16 @@ function parsePillar(
 function buildPrompt(plan: PlanId, m: MetricsInput, pillars: PillarsPlan): string {
   const perspectiveId = resolvePerspective(m.perspective);
   const p = PERSPECTIVES[perspectiveId];
+  const cdcOnly =
+    perspectiveId === "cdc"
+      ? `This is a CDC-style plan — you may use CDC-style habit themes (150 min activity, produce-forward plates, 7+ sleep, limit added sugar/sodium).`
+      : `This is an ALTERNATIVE plan — do NOT use CDC guidelines, CDC activity minutes (150), Dietary Guidelines plate patterns, or CDC sleep slogans. Use only the alternative themes listed. Prefer lower refined carbs, protein-forward plates, walking, and recovery.`;
   return `You are a cautious DIY wellness coach for VitalGauge.
 You MUST NOT diagnose, prescribe, cure, or claim to replace a licensed clinician.
 The user just completed demographics/metrics. Return a 7-day educational plan under Rest, Nutrition, and Exercise.
 Frame suggestions using educational themes (${p.label}): ${p.themes.join("; ")}.
-Do not name private clinicians. You may say “CDC-style” or “alternative doctors” generically.
-Never claim affiliation with the CDC or any private clinician.
+${cdcOnly}
+Do not name private clinicians. Never claim affiliation with the CDC or any private clinician.
 If sleep < 6 or stress >= 8, prioritize Rest and keep Exercise easy; block aggressive fasting.
 Do not invent life-expectancy numbers or numeric nutrient targets; the app computes those separately.
 Return concise JSON with keys:
@@ -286,7 +294,7 @@ You may refine this draft pillars JSON: ${JSON.stringify(pillars)}
 Plan tier: ${plan}
 Metrics JSON: ${JSON.stringify(m)}
 Disclaimer context: ${MEDICAL_DISCLAIMER}
-Lens: ${LENS_DISCLAIMER}`;
+Lens: ${lensDisclaimerFor(perspectiveId)}`;
 }
 
 export async function generateAdvice(
@@ -339,9 +347,9 @@ export async function generateAdvice(
 
     return {
       disclaimer: MEDICAL_DISCLAIMER,
-      lensDisclaimer: LENS_DISCLAIMER,
+      lensDisclaimer: fallback.lensDisclaimer,
       lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
-      targetsDisclaimer: TARGETS_DISCLAIMER,
+      targetsDisclaimer: fallback.targetsDisclaimer,
       perspective: fallback.perspective,
       lifeExpectancy: fallback.lifeExpectancy,
       pillars,

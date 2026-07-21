@@ -1,7 +1,15 @@
 import { type MetricsInput } from "./plans";
-import { resolvePerspective } from "./perspectives";
+import { isCdcPerspective, resolvePerspective } from "./perspectives";
 
-export const TARGETS_DISCLAIMER = `These numeric targets are DIY educational estimates from your demographics (age, sex, height, weight, activity, goal). They are not medical prescriptions, lab orders, or personalized clinical nutrition. Vitamin, mineral, and amino-acid figures lean on general adult reference ranges and scale with body weight where noted. Do not megadose supplements from this table — discuss labs and supplements with a licensed clinician.`;
+export const TARGETS_DISCLAIMER = `These numeric targets are DIY educational estimates from your demographics (age, sex, height, weight, activity, goal, and plan style). They are not medical prescriptions, lab orders, or personalized clinical nutrition. Do not megadose supplements from this table — discuss labs and supplements with a licensed clinician.`;
+
+export const TARGETS_DISCLAIMER_CDC = `${TARGETS_DISCLAIMER} On the CDC-style plan, sleep, activity, fiber, sodium, and micronutrient placeholders follow common public-health / Dietary Guidelines–style educational ranges.`;
+
+export const TARGETS_DISCLAIMER_ALT = `${TARGETS_DISCLAIMER} On alternative plans, macros and habit framing follow lower-refined-carb / metabolic wellness themes — not CDC Dietary Guidelines or CDC activity targets.`;
+
+export function targetsDisclaimerFor(perspectiveId: ReturnType<typeof resolvePerspective>): string {
+  return isCdcPerspective(perspectiveId) ? TARGETS_DISCLAIMER_CDC : TARGETS_DISCLAIMER_ALT;
+}
 
 export type NutrientTarget = {
   name: string;
@@ -95,16 +103,22 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   if (bmr == null || !m.weightKg) return null;
 
   const perspective = resolvePerspective(m.perspective);
+  const cdc = isCdcPerspective(perspective);
   const goal = m.primaryGoal ?? "general";
   const factor = activityFactor(m.activityLevel);
   const tdee = Math.round(bmr * factor);
 
-  // Sleep hours
-  let hoursMin = 7;
-  let hoursTarget = 8;
-  let hoursMax = 9;
+  // Sleep hours — CDC plan uses public-health 7+ framing; alt uses recovery band without CDC slogans
+  let hoursMin = cdc ? 7 : 7;
+  let hoursTarget = cdc ? 8 : 8;
+  let hoursMax = cdc ? 9 : 9;
+  if (!cdc) {
+    hoursMin = 7;
+    hoursTarget = 8;
+    hoursMax = 9;
+  }
   if (goal === "sleep" || goal === "stress") {
-    hoursMin = 7.5;
+    hoursMin = cdc ? 7.5 : 7.5;
     hoursTarget = 8.5;
     hoursMax = 9.5;
   }
@@ -122,29 +136,29 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   let goalAdjustment = "Maintenance estimate (activity-adjusted TDEE).";
   if (goal === "weight") {
     dailyTarget = Math.max(1200, Math.round(tdee - 400));
-    goalAdjustment = "About −400 kcal vs TDEE for a modest educational deficit (not a crash diet).";
+    goalAdjustment = cdc
+      ? "About −400 kcal vs TDEE for a modest educational deficit (CDC-style: produce-forward, not a crash diet)."
+      : "About −400 kcal vs TDEE for a modest educational deficit — keep protein high and refined carbs low (alternative lens).";
   } else if (goal === "strength") {
     dailyTarget = Math.round(tdee + 200);
     goalAdjustment = "About +200 kcal vs TDEE to support training (educational surplus).";
   } else if (goal === "energy") {
     dailyTarget = tdee;
-    goalAdjustment = "Maintenance calories with protein-forward meals for steadier energy.";
+    goalAdjustment = cdc
+      ? "Maintenance calories with balanced plates for steadier energy."
+      : "Maintenance calories with protein-forward, lower-refined-carb meals for steadier energy.";
   }
 
-  // Lens nudges (mild)
   if (perspective === "metabolic" && goal === "weight") {
     goalAdjustment += " Alternative metabolic lens: keep protein high if lowering refined carbs.";
   }
-  if (perspective === "cdc" && goal === "weight") {
-    goalAdjustment += " CDC-style lens: favor a modest deficit with produce-forward meals.";
-  }
 
-  // Exercise burn — portion of TDEE beyond sedentary BMR*1.2
+  // Exercise burn — CDC plan can use a public-health-style activity floor; alt uses recovery/walking-oriented floors only
   const sedentaryTdee = Math.round(bmr * 1.2);
-  const activityGap = Math.max(150, tdee - sedentaryTdee);
-  let dailyBurnTargetKcal = Math.round(activityGap * 0.55);
+  const activityGap = Math.max(cdc ? 150 : 200, tdee - sedentaryTdee);
+  let dailyBurnTargetKcal = Math.round(activityGap * (cdc ? 0.55 : 0.5));
   if (m.activityLevel === "sedentary" || m.activityLevel === "light") {
-    dailyBurnTargetKcal = Math.max(150, Math.round(bmr * 0.12));
+    dailyBurnTargetKcal = Math.max(cdc ? 150 : 180, Math.round(bmr * (cdc ? 0.12 : 0.1)));
   }
   if (
     (typeof m.sleepHours === "number" && m.sleepHours < 6) ||
@@ -208,14 +222,17 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   const fatPctFinal = Math.round((fatG * 9 * 100) / dailyTarget);
   const carbsPctFinal = Math.max(0, 100 - proteinPct - fatPctFinal);
 
-  const fiberG = Math.min(45, Math.max(25, Math.round(14 * (dailyTarget / 1000))));
+  // Fiber: CDC uses ~14 g/1000 kcal; alternative does not use that CDC/DGA formula
+  const fiberG = cdc
+    ? Math.min(45, Math.max(25, Math.round(14 * (dailyTarget / 1000))))
+    : Math.min(40, Math.max(20, Math.round(carbsG * 0.12 + 15)));
   const waterLiters = round(Math.max(2.0, m.weightKg * 0.033), 1);
 
   const female = m.sex === "female";
   const over50 = (m.age ?? 30) >= 51;
   const over70 = (m.age ?? 30) >= 71;
 
-  // Amino acids — WHO/FAO adult scoring pattern style (mg/kg), educational
+  // Amino acids — educational protein-quality placeholders (scale with body weight)
   const w = m.weightKg;
   const aminoAcids: NutrientTarget[] = [
     aa("Histidine", 10, w),
@@ -235,65 +252,128 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     },
   ];
 
-  const vitamins: NutrientTarget[] = [
-    { name: "Vitamin A (RAE)", amount: female ? 700 : 900, unit: "mcg/day" },
-    { name: "Vitamin C", amount: female ? 75 : 90, unit: "mg/day" },
-    { name: "Vitamin D", amount: over70 ? 800 : 600, unit: "IU/day", note: "Get labs before high-dose supplements" },
-    { name: "Vitamin E", amount: 15, unit: "mg/day" },
-    { name: "Vitamin K", amount: female ? 90 : 120, unit: "mcg/day" },
-    { name: "Thiamin (B1)", amount: female ? 1.1 : 1.2, unit: "mg/day" },
-    { name: "Riboflavin (B2)", amount: female ? 1.1 : 1.3, unit: "mg/day" },
-    { name: "Niacin (B3)", amount: female ? 14 : 16, unit: "mg NE/day" },
-    { name: "Vitamin B6", amount: over50 ? (female ? 1.5 : 1.7) : (female ? 1.3 : 1.3), unit: "mg/day" },
-    { name: "Folate (DFE)", amount: 400, unit: "mcg/day" },
-    { name: "Vitamin B12", amount: 2.4, unit: "mcg/day" },
-    { name: "Pantothenic acid (B5)", amount: 5, unit: "mg/day" },
-    { name: "Biotin", amount: 30, unit: "mcg/day" },
-    { name: "Choline", amount: female ? 425 : 550, unit: "mg/day" },
-  ];
+  const vitamins: NutrientTarget[] = cdc
+    ? [
+        { name: "Vitamin A (RAE)", amount: female ? 700 : 900, unit: "mcg/day", note: "CDC-style educational RDA-like placeholder" },
+        { name: "Vitamin C", amount: female ? 75 : 90, unit: "mg/day", note: "CDC-style educational RDA-like placeholder" },
+        { name: "Vitamin D", amount: over70 ? 800 : 600, unit: "IU/day", note: "CDC-style educational IU range — labs before high-dose" },
+        { name: "Vitamin E", amount: 15, unit: "mg/day" },
+        { name: "Vitamin K", amount: female ? 90 : 120, unit: "mcg/day" },
+        { name: "Thiamin (B1)", amount: female ? 1.1 : 1.2, unit: "mg/day" },
+        { name: "Riboflavin (B2)", amount: female ? 1.1 : 1.3, unit: "mg/day" },
+        { name: "Niacin (B3)", amount: female ? 14 : 16, unit: "mg NE/day" },
+        { name: "Vitamin B6", amount: over50 ? (female ? 1.5 : 1.7) : 1.3, unit: "mg/day" },
+        { name: "Folate (DFE)", amount: 400, unit: "mcg/day" },
+        { name: "Vitamin B12", amount: 2.4, unit: "mcg/day" },
+        { name: "Pantothenic acid (B5)", amount: 5, unit: "mg/day" },
+        { name: "Biotin", amount: 30, unit: "mcg/day" },
+        { name: "Choline", amount: female ? 425 : 550, unit: "mg/day" },
+      ]
+    : [
+        { name: "Vitamin A (food-first)", amount: female ? 700 : 900, unit: "mcg/day", note: "Alternative educational — not a CDC target" },
+        { name: "Vitamin C", amount: female ? 90 : 100, unit: "mg/day", note: "Alternative educational — not a CDC target" },
+        { name: "Vitamin D", amount: 1000, unit: "IU/day", note: "Alternative educational placeholder — clinician/labs before high-dose" },
+        { name: "Vitamin E", amount: 15, unit: "mg/day", note: "Alternative educational — not a CDC target" },
+        { name: "Vitamin K", amount: female ? 90 : 120, unit: "mcg/day", note: "Leafy greens emphasis" },
+        { name: "Thiamin (B1)", amount: female ? 1.1 : 1.2, unit: "mg/day" },
+        { name: "Riboflavin (B2)", amount: female ? 1.1 : 1.3, unit: "mg/day" },
+        { name: "Niacin (B3)", amount: female ? 14 : 16, unit: "mg NE/day" },
+        { name: "Vitamin B6", amount: over50 ? (female ? 1.5 : 1.7) : 1.3, unit: "mg/day" },
+        { name: "Folate (DFE)", amount: 400, unit: "mcg/day", note: "Greens/legumes if tolerated" },
+        { name: "Vitamin B12", amount: 2.4, unit: "mcg/day", note: "Especially relevant if low animal foods" },
+        { name: "Pantothenic acid (B5)", amount: 5, unit: "mg/day" },
+        { name: "Biotin", amount: 30, unit: "mcg/day" },
+        { name: "Choline", amount: female ? 425 : 550, unit: "mg/day", note: "Eggs/liver/soy if you eat them" },
+      ];
 
-  const minerals: NutrientTarget[] = [
-    {
-      name: "Calcium",
-      amount: over50 ? 1200 : 1000,
-      unit: "mg/day",
-    },
-    {
-      name: "Iron",
-      amount: female && !over50 ? 18 : 8,
-      unit: "mg/day",
-      note: female && !over50 ? "Higher for many premenopausal adults" : undefined,
-    },
-    {
-      name: "Magnesium",
-      amount: female ? (over30(m) ? 320 : 310) : over30(m) ? 420 : 400,
-      unit: "mg/day",
-    },
-    { name: "Zinc", amount: female ? 8 : 11, unit: "mg/day" },
-    { name: "Potassium", amount: female ? 2600 : 3400, unit: "mg/day", note: "AI-style adequate intake (educational)" },
-    {
-      name: "Sodium",
-      amount: 2300,
-      unit: "mg/day",
-      note: "Upper educational limit for many adults — clinician may set lower",
-    },
-    { name: "Phosphorus", amount: 700, unit: "mg/day" },
-    { name: "Selenium", amount: 55, unit: "mcg/day" },
-    { name: "Iodine", amount: 150, unit: "mcg/day" },
-    { name: "Copper", amount: 0.9, unit: "mg/day" },
-    { name: "Manganese", amount: female ? 1.8 : 2.3, unit: "mg/day" },
-    { name: "Chromium", amount: female ? (over50 ? 20 : 25) : over50 ? 30 : 35, unit: "mcg/day" },
-  ];
+  const minerals: NutrientTarget[] = cdc
+    ? [
+        { name: "Calcium", amount: over50 ? 1200 : 1000, unit: "mg/day", note: "CDC-style educational placeholder" },
+        {
+          name: "Iron",
+          amount: female && !over50 ? 18 : 8,
+          unit: "mg/day",
+          note: female && !over50 ? "Higher for many premenopausal adults" : undefined,
+        },
+        {
+          name: "Magnesium",
+          amount: female ? (over30(m) ? 320 : 310) : over30(m) ? 420 : 400,
+          unit: "mg/day",
+        },
+        { name: "Zinc", amount: female ? 8 : 11, unit: "mg/day" },
+        { name: "Potassium", amount: female ? 2600 : 3400, unit: "mg/day", note: "CDC-style adequate-intake–like educational figure" },
+        {
+          name: "Sodium",
+          amount: 2300,
+          unit: "mg/day",
+          note: "CDC / Dietary Guidelines–style upper educational limit for many adults",
+        },
+        { name: "Phosphorus", amount: 700, unit: "mg/day" },
+        { name: "Selenium", amount: 55, unit: "mcg/day" },
+        { name: "Iodine", amount: 150, unit: "mcg/day" },
+        { name: "Copper", amount: 0.9, unit: "mg/day" },
+        { name: "Manganese", amount: female ? 1.8 : 2.3, unit: "mg/day" },
+        { name: "Chromium", amount: female ? (over50 ? 20 : 25) : over50 ? 30 : 35, unit: "mcg/day" },
+      ]
+    : [
+        { name: "Calcium", amount: over50 ? 1200 : 1000, unit: "mg/day", note: "Alternative educational — not a CDC target" },
+        {
+          name: "Iron",
+          amount: female && !over50 ? 18 : 8,
+          unit: "mg/day",
+          note: female && !over50 ? "Premenopausal needs often higher — confirm with clinician" : "Men: avoid extra iron unless directed",
+        },
+        {
+          name: "Magnesium",
+          amount: female ? (over30(m) ? 350 : 320) : over30(m) ? 450 : 420,
+          unit: "mg/day",
+          note: "Alternative emphasis — leafy greens/seeds; electrolytes if lowering carbs",
+        },
+        { name: "Zinc", amount: female ? 8 : 11, unit: "mg/day" },
+        {
+          name: "Potassium",
+          amount: female ? 3000 : 3500,
+          unit: "mg/day",
+          note: "Alternative educational — not a CDC adequate-intake figure",
+        },
+        {
+          name: "Sodium",
+          amount: 3000,
+          unit: "mg/day",
+          note: "Alternative educational — not the CDC 2300 mg limit; electrolytes matter when lowering carbs (clinician may restrict)",
+        },
+        { name: "Phosphorus", amount: 700, unit: "mg/day" },
+        { name: "Selenium", amount: 55, unit: "mcg/day" },
+        { name: "Iodine", amount: 150, unit: "mcg/day" },
+        { name: "Copper", amount: 0.9, unit: "mg/day" },
+        { name: "Manganese", amount: female ? 1.8 : 2.3, unit: "mg/day" },
+        { name: "Chromium", amount: female ? (over50 ? 20 : 25) : over50 ? 30 : 35, unit: "mcg/day" },
+      ];
+
+  const exerciseExamples = cdc
+    ? [
+        `~${dailyBurnTargetKcal} kcal/day from intentional movement (walks + training), educational estimate`,
+        "CDC-style: build toward 150+ minutes moderate activity weekly when recovered.",
+        `Weekly movement burn target ≈ ${weeklyBurnTargetKcal} kcal`,
+      ]
+    : [
+        `~${dailyBurnTargetKcal} kcal/day from walking + optional strength (educational estimate)`,
+        "Alternative: daily walks and 2 simple strength sessions — not a CDC 150-minute target.",
+        `Weekly movement burn target ≈ ${weeklyBurnTargetKcal} kcal`,
+      ];
 
   return {
-    disclaimer: TARGETS_DISCLAIMER,
-    method:
-      "Sleep band from goal; calories via Mifflin–St Jeor BMR × activity factor with goal offset; exercise kcal from activity gap; macros from protein g/kg + fat/carb split by plan style (CDC-style carb-forward; alternative lenses lower-carb leaning, educational only); amino acids from mg/kg educational patterns; vitamins/minerals from general adult reference ranges by sex/age.",
+    disclaimer: targetsDisclaimerFor(perspective),
+    method: cdc
+      ? "CDC-style plan: sleep/activity/fiber/sodium/micronutrients use public-health educational ranges; calories via Mifflin–St Jeor × activity; macros AMDR-leaning (carb-forward)."
+      : "Alternative plan: lower-refined-carb macro split and metabolic/wellness framing — does not use CDC Dietary Guidelines, CDC 150-minute activity targets, or CDC sodium/fiber formulas. Calories via Mifflin–St Jeor × activity; micronutrients are educational food-first placeholders only.",
     sleep: {
       hoursMin,
       hoursTarget,
       hoursMax,
-      label: `${hoursTarget} hours target (${hoursMin}–${hoursMax} band)`,
+      label: cdc
+        ? `${hoursTarget} hours target (${hoursMin}–${hoursMax} band, CDC-style 7+ framing)`
+        : `${hoursTarget} hours target (${hoursMin}–${hoursMax} recovery band — not a CDC sleep guideline)`,
     },
     calories: {
       bmr,
@@ -304,11 +384,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     exercise: {
       dailyBurnTargetKcal,
       weeklyBurnTargetKcal,
-      examples: [
-        `~${dailyBurnTargetKcal} kcal/day from intentional movement (walks + training), educational estimate`,
-        `~${Math.round(dailyBurnTargetKcal / 4)} kcal ≈ a brisk ~${Math.max(15, Math.round(dailyBurnTargetKcal / 5))}–${Math.max(25, Math.round(dailyBurnTargetKcal / 4))} min walk for many adults (very rough)`,
-        `Weekly movement burn target ≈ ${weeklyBurnTargetKcal} kcal`,
-      ],
+      examples: exerciseExamples,
     },
     macros: {
       proteinG,

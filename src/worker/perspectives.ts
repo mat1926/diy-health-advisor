@@ -157,9 +157,22 @@ export const PERSPECTIVES: Record<
   },
 };
 
-export const LENS_DISCLAIMER = `Guidance may follow a CDC-style habit framework or educational themes often discussed by alternative doctors and wellness educators, plus optional DIY self-tracking (including pH strips). VitalGauge is not affiliated with the CDC or any private clinician. These ideas can be debated; none of this is a diagnosis, prescription, or cure.`;
+export const LENS_DISCLAIMER_CDC = `This plan uses a CDC-style public-health habit framework for education only (activity, strength, produce, sleep, limiting added sugars/sodium). VitalGauge is not affiliated with the CDC. None of this is a diagnosis, prescription, or cure.`;
+
+export const LENS_DISCLAIMER_ALT = `This plan uses educational themes often discussed in alternative / metabolic wellness teaching (lower refined carbs, whole foods, recovery, DIY self-tracking). It does not use CDC Dietary Guidelines or CDC activity targets. VitalGauge is not affiliated with any private clinician. None of this is a diagnosis, prescription, or cure.`;
+
+/** @deprecated Prefer lensDisclaimerFor(perspective) */
+export const LENS_DISCLAIMER = LENS_DISCLAIMER_CDC;
 
 export const CDC_NOTE = `CDC-style targets here are educational summaries of common public-health habit guidance (activity, strength, produce, sleep, limiting added sugars/sodium). They are not a personal medical plan from the CDC.`;
+
+export function isCdcPerspective(id: PerspectiveId): boolean {
+  return id === "cdc";
+}
+
+export function lensDisclaimerFor(id: PerspectiveId): string {
+  return isCdcPerspective(id) ? LENS_DISCLAIMER_CDC : LENS_DISCLAIMER_ALT;
+}
 
 export function resolvePerspective(id: unknown): PerspectiveId {
   const raw = String(id ?? "cdc");

@@ -159,14 +159,26 @@ function buildNutrition(
   const goal = m.primaryGoal ?? "general";
   const bodyMass = m.heightCm && m.weightKg ? bmi(m.heightCm, m.weightKg) : null;
   const items: string[] = [];
+  const cdc = perspective === "cdc";
 
-  let focus = "Build simple, repeatable plates and steady hydration.";
-  let weeklyTarget =
-    "Protein at each meal · vegetables most days · water with meals · one fewer ultra-processed snack/day";
+  let focus = cdc
+    ? "Build balanced plates with produce, protein, and steady hydration."
+    : "Build protein-forward, lower-refined-carb plates and steady hydration.";
+  let weeklyTarget = cdc
+    ? "Fruit/veg most meals · protein each meal · limit added sugar & excess sodium · water with meals"
+    : "Protein at each meal · non-starchy vegetables · water with meals · cut ultra-processed snacks";
 
-  items.push(
-    "Build plates around protein + non-starchy vegetables, then add a whole-food carb or fat you tolerate.",
-  );
+  if (cdc) {
+    items.push(
+      "Fill half the plate with fruits and vegetables at most meals when practical.",
+      "Choose whole grains and lean proteins more often than sugary drinks and ultra-processed snacks.",
+    );
+  } else {
+    items.push(
+      "Build plates around protein + non-starchy vegetables, then add a whole-food carb or fat you tolerate.",
+      "Prioritize cutting refined carbs and sugary drinks — this plan does not use CDC Dietary Guidelines plate rules.",
+    );
+  }
 
   if (locked) {
     focus = "Keep nutrition steady and nourishing — no aggressive fasting or cleanses this week.";
