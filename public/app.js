@@ -75,6 +75,19 @@ function fillTargets(t, disclaimer) {
   document.getElementById("out-t-ex-detail").textContent =
     `Weekly ~${t.exercise.weeklyBurnTargetKcal} kcal intentional movement`;
 
+  const reservesWrap = document.getElementById("out-t-reserves-wrap");
+  if (reservesWrap) {
+    if (t.fatStores && t.fatStores.excessLb > 0) {
+      reservesWrap.hidden = false;
+      document.getElementById("out-t-reserves").textContent =
+        `~${t.fatStores.daysOfCaloricReserves} days`;
+      document.getElementById("out-t-reserves-detail").textContent =
+        t.fatStores.reservesLine;
+    } else {
+      reservesWrap.hidden = true;
+    }
+  }
+
   const macroBody = [
     { name: "Protein", amount: t.macros.proteinG, unit: "g", note: `${t.macros.proteinPct}% kcal${t.priorityFocus === "alt_protein_micros" ? " · PRIMARY" : ""}` },
     {

@@ -203,6 +203,9 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     weightProgress
       ? `progress forecast ~${weightProgress.pace.weeklyLossLb} lb/week (educational)`
       : null,
+    targets?.fatStores?.excessLb
+      ? targets.fatStores.reservesLine
+      : null,
     doctorReview
       ? `doctor-lens review: ${doctorReview.findings.length} finding(s) · ${doctorReview.cards.length} rec cards`
       : null,
@@ -250,7 +253,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     pillars.rest.weeklyTarget = `Sleep ${targets.sleep.hoursTarget}h (band ${targets.sleep.hoursMin}–${targets.sleep.hoursMax}) · wake ±30 min · daily downshift`;
     pillars.nutrition.weeklyTarget =
       targets.priorityFocus === "alt_protein_micros"
-        ? `${targets.calories.dailyTarget} kcal · PROTEIN ${targets.macros.proteinG}g (primary) · vitamins/minerals/AA · carbs/fat flexible`
+        ? `${targets.calories.dailyTarget} kcal food · PROTEIN ${targets.macros.proteinG}g · ${targets.fatStores?.reservesLine ?? "vitamins/minerals/AA"}`
         : `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g · carbs ${targets.macros.carbsG}g · fat ${targets.macros.fatG}g · water ~${targets.macros.waterLiters}L`;
     pillars.exercise.weeklyTarget = `~${targets.exercise.dailyBurnTargetKcal} kcal/day movement burn · ~${targets.exercise.weeklyBurnTargetKcal} kcal/week`;
   }

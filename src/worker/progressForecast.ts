@@ -83,7 +83,7 @@ export function buildWeightProgressForecast(
 
   let note = altProteinMicros
     ? targets.fatStores && targets.fatStores.excessLb > 0
-      ? `Fat-store model: ~${targets.fatStores.excessLb} lb over ideal ≈ ${targets.fatStores.estimatedStoreKcal.toLocaleString()} kcal; drawing ~${dailyDeficitKcal} kcal/day from stores.`
+      ? `${targets.fatStores.reservesLine} Drawing ~${dailyDeficitKcal} kcal/day from stores.`
       : "Alternative plan forecast: deficit from protein-forward food target (carbs/fat flexible)."
     : "Educational pace from calorie gap ÷ 3,500 kcal per lb.";
   if (weeklyLossLb > 2) {
@@ -135,7 +135,7 @@ export function buildWeightProgressForecast(
   } else {
     summary = altProteinMicros
       ? targets.fatStores && targets.fatStores.excessLb > 0
-        ? `Modeling ~${targets.fatStores.excessLb} lb over ideal as fat stores. At ~${weeklyLossLb} lb/week from a ~${dailyDeficitKcal} kcal/day store draw, BMI ~${targetBmi} is roughly ${estimatedWeeks} weeks away — illustrative only.`
+        ? `${targets.fatStores.reservesLine} At ~${weeklyLossLb} lb/week from a ~${dailyDeficitKcal} kcal/day store draw, BMI ~${targetBmi} is roughly ${estimatedWeeks} weeks away — illustrative only.`
         : `At ~${weeklyLossLb} lb/week on this Alternative protein-forward deficit, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`
       : `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`;
   }

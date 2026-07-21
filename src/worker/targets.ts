@@ -147,7 +147,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   let dailyTarget = tdee;
   let goalAdjustment = "Maintenance estimate (activity-adjusted TDEE).";
   let fromFatStoresKcal = 0;
-  const fatStores = !cdc ? estimateFatStores(m, { tdee }) : null;
+  const fatStores = !cdc ? estimateFatStores(m, { tdee, bmr }) : null;
 
   if (!cdc) {
     // Alternative: food covers protein + micros; energy gap draws from modeled fat stores when available
@@ -159,7 +159,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     } else if (fatStores && fatStores.excessLb > 0 && fatStores.dailyDrawKcal > 0) {
       fromFatStoresKcal = fatStores.dailyDrawKcal;
       dailyTarget = Math.max(1200, Math.round(tdee - fromFatStoresKcal));
-      goalAdjustment = `Alternative plan: food ≈ ${dailyTarget} kcal; ~${fromFatStoresKcal} kcal/day assumed from fat stores (~${fatStores.excessLb} lb over ideal BMI ${fatStores.idealBmi}). Hit protein, vitamins, minerals, and amino acids — carbs/fat from food are flexible.`;
+      goalAdjustment = `Alternative plan: food ≈ ${dailyTarget} kcal; ~${fromFatStoresKcal} kcal/day assumed from fat stores (~${fatStores.excessLb} lb over ideal BMI ${fatStores.idealBmi}). ${fatStores.reservesLine} Hit protein, vitamins, minerals, and amino acids — carbs/fat from food are flexible.`;
     } else {
       dailyTarget = Math.max(1200, Math.round(tdee - 400));
       fromFatStoresKcal = Math.max(0, tdee - dailyTarget);
@@ -388,7 +388,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     priorityNote: cdc
       ? "CDC-style: balanced macros including carbs and fat as intentional plate targets."
       : fatStores && fatStores.excessLb > 0
-        ? `Alternative: hit protein + micros. ~${fatStores.excessLb} lb over ideal treated as fat stores (~${fromFatStoresKcal} kcal/day from stores + ~${dailyTarget} kcal from food).`
+        ? `Alternative: hit protein + micros. ${fatStores.reservesLine} Food ~${dailyTarget} kcal + ~${fromFatStoresKcal} kcal/day from stores.`
         : "Alternative: aim to hit protein, amino acids, vitamins, and minerals. Carbs/fat fill remaining food calories — do not force high-carb targets.",
     fatStores: cdc ? null : fatStores,
     sleep: {

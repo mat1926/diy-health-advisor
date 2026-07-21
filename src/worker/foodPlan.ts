@@ -474,7 +474,7 @@ export function buildDetailedFoodPlan(
     ? [
         "Alternative priority: hit protein, amino acids, vitamins, and minerals — not carb/fat quotas.",
         targets.fatStores && targets.fatStores.excessLb > 0
-          ? `Fat-store model: ~${targets.fatStores.excessLb} lb over ideal (~${targets.fatStores.idealWeightLb} lb) ≈ ${targets.fatStores.estimatedStoreKcal.toLocaleString()} kcal. Food ≈ ${targets.calories.dailyTarget} kcal; ~${targets.calories.fromFatStoresKcal ?? targets.fatStores.dailyDrawKcal} kcal/day assumed from body fat.`
+          ? `${targets.fatStores.reservesLine} Food ≈ ${targets.calories.dailyTarget} kcal; ~${targets.calories.fromFatStoresKcal ?? targets.fatStores.dailyDrawKcal} kcal/day assumed from body fat.`
           : "Little excess above ideal BMI — keep food near the calorie target; limited store draw modeled.",
         "NOW ADAM/EVE cover many vitamins/minerals; whey covers a large share of protein/EAAs.",
         `Still need food for remaining protein (~${Math.max(0, proteinTarget - wheyProteinG)}g) and mineral-dense plants — not for filling all of TDEE with carbs/fat.`,
@@ -568,7 +568,7 @@ export function buildDetailedFoodPlan(
       : "Detailed itemized food plan (CDC-style · kit-based)",
     summary: alt
       ? targets.fatStores && targets.fatStores.excessLb > 0
-        ? `Protein-first Alternative day: food ~${targets.calories.dailyTarget} kcal + ~${targets.calories.fromFatStoresKcal ?? 0} kcal from modeled fat stores (~${targets.fatStores.excessLb} lb over ideal). Aim for ~${proteinTarget}g protein + vitamins/minerals/EAAs — not carb/fat quotas.`
+        ? `Protein-first Alternative day: ${targets.fatStores.reservesLine} Food ~${targets.calories.dailyTarget} kcal + ~${targets.calories.fromFatStoresKcal ?? 0} kcal from stores. Aim for ~${proteinTarget}g protein + vitamins/minerals/EAAs — not carb/fat quotas.`
         : `Protein-first Alternative day (~${targets.calories.dailyTarget} kcal) built to hit ~${proteinTarget}g protein + multi-supported vitamins/minerals/EAAs. Carbs/fat are flexible.`
       : `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s) and ${sex === "female" ? "EVE" : "ADAM"}.`,
     style: alt ? "alternative" : "cdc",
