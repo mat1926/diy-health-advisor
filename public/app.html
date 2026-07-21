@@ -387,16 +387,16 @@
                 <p class="target-stat" id="out-food-secondary-stat"></p>
                 <p class="muted" id="out-food-secondary-detail"></p>
               </div>
-              <div>
+              <div id="out-food-stat-cf-wrap">
                 <p class="badge">Carbs / Fat</p>
                 <p class="target-stat" id="out-food-cf"></p>
                 <p class="muted" id="out-food-cf-detail"></p>
               </div>
             </div>
 
-            <h3 style="margin-top: 1.25rem">What whey + NOW do <em>not</em> cover (macros)</h3>
+            <h3 style="margin-top: 1.25rem">What whey + NOW do <em>not</em> cover</h3>
             <ul id="out-food-kit-gaps"></ul>
-            <div class="table-wrap" style="margin-top: 0.75rem">
+            <div class="table-wrap" style="margin-top: 0.75rem" id="out-food-kit-macro-wrap">
               <table class="data-table" id="out-food-kit-macro">
                 <thead>
                   <tr>
@@ -411,10 +411,28 @@
               </table>
             </div>
 
-            <h3 style="margin-top: 1.25rem">Itemized day plan (every food)</h3>
+            <div id="out-food-shortfalls-wrap" hidden>
+              <h3 style="margin-top: 1.25rem">Shortfalls after kit + options to meet target</h3>
+              <div class="table-wrap">
+                <table class="data-table" id="out-food-shortfalls">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Nutrient</th>
+                      <th>From kit / target</th>
+                      <th>Shortfall</th>
+                      <th>Options to meet target</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <h3 style="margin-top: 1.25rem" id="out-food-itemized-title">Itemized day plan (every food)</h3>
             <div class="table-wrap">
               <table class="data-table" id="out-food-itemized">
-                <thead>
+                <thead id="out-food-itemized-head">
                   <tr>
                     <th>#</th>
                     <th>Meal</th>
@@ -431,7 +449,7 @@
               </table>
             </div>
 
-            <h3 style="margin-top: 1.25rem">Meals (grouped)</h3>
+            <h3 style="margin-top: 1.25rem" id="out-food-meals-title">Meals (grouped)</h3>
             <div id="out-food-meals"></div>
             <h3 style="margin-top: 1.25rem">Vitamin coverage</h3>
             <div class="table-wrap">
@@ -460,7 +478,7 @@
                 <tbody></tbody>
               </table>
             </div>
-            <h3 style="margin-top: 1.25rem">Shopping list</h3>
+            <h3 style="margin-top: 1.25rem" id="out-food-shop-title">Shopping list</h3>
             <ul id="out-food-shop"></ul>
             <h3 style="margin-top: 1.25rem">Prep tips</h3>
             <ul id="out-food-tips"></ul>
@@ -495,7 +513,7 @@
             <h3 style="margin-top: 1.25rem">Modify plan &amp; update forecast</h3>
             <p class="muted" id="out-progress-hint"></p>
             <div class="form-grid" style="margin-top: 0.75rem">
-              <label>
+              <label id="adj-calories-label">
                 Reduce calories
                 <select id="adj-calories">
                   <option value="0">Plan default</option>

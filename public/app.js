@@ -67,9 +67,9 @@ function fillTargets(t, disclaimer) {
   if (altProtein) {
     document.getElementById("out-t-cal").textContent = `${t.macros.proteinG} g`;
     document.getElementById("out-t-cal-detail").textContent =
-      t.calories.fromFatStoresKcal && t.calories.fromFatStoresKcal > 0
-        ? `Primary goal · food ~${t.calories.dailyTarget} kcal · from fat stores ~${t.calories.fromFatStoresKcal} · TDEE ~${t.calories.tdee}`
-        : `Primary goal · food ~${t.calories.dailyTarget} kcal · TDEE ~${t.calories.tdee}`;
+      t.fatStores?.reservesLine
+        ? `Primary goal · ${t.fatStores.reservesLine}`
+        : "Primary goal · vitamins / minerals / amino acids · no calorie target";
   } else {
     document.getElementById("out-t-cal").textContent = `${t.calories.dailyTarget} kcal`;
     document.getElementById("out-t-cal-detail").textContent =
@@ -97,32 +97,27 @@ function fillTargets(t, disclaimer) {
     }
   }
 
-  const macroBody = [
-    { name: "Protein", amount: t.macros.proteinG, unit: "g", note: `${t.macros.proteinPct}% kcal${t.priorityFocus === "alt_protein_micros" ? " · PRIMARY" : ""}` },
-    {
-      name: "Carbohydrates",
-      amount: t.macros.carbsG,
-      unit: "g",
-      note: t.macros.carbsFatAreFlexible
-        ? `${t.macros.carbsPct}% · flexible (not a hard goal)`
-        : `${t.macros.carbsPct}% kcal`,
-    },
-    {
-      name: "Fat",
-      amount: t.macros.fatG,
-      unit: "g",
-      note: t.macros.carbsFatAreFlexible
-        ? `${t.macros.fatPct}% · flexible (not a hard goal)`
-        : `${t.macros.fatPct}% kcal`,
-    },
-    { name: "Fiber", amount: t.macros.fiberG, unit: "g", note: t.macros.carbsFatAreFlexible ? "Supportive, not primary alt goal" : "Educational daily fiber target" },
-    { name: "Water", amount: t.macros.waterLiters, unit: "L", note: "Rough fluid target from body weight" },
-  ];
+  const macroBody = altProtein
+    ? [
+        { name: "Protein", amount: t.macros.proteinG, unit: "g", note: "PRIMARY goal" },
+        { name: "Carbohydrates", amount: "—", unit: "", note: "Flexible · not a target" },
+        { name: "Fat", amount: "—", unit: "", note: "Flexible · not a target" },
+        { name: "Fiber", amount: "—", unit: "", note: "Supportive · not a primary target" },
+        { name: "Water", amount: t.macros.waterLiters, unit: "L", note: "Rough fluid habit" },
+      ]
+    : [
+        { name: "Protein", amount: t.macros.proteinG, unit: "g", note: `${t.macros.proteinPct}% kcal` },
+        { name: "Carbohydrates", amount: t.macros.carbsG, unit: "g", note: `${t.macros.carbsPct}% kcal` },
+        { name: "Fat", amount: t.macros.fatG, unit: "g", note: `${t.macros.fatPct}% kcal` },
+        { name: "Fiber", amount: t.macros.fiberG, unit: "g", note: "Educational daily fiber target" },
+        { name: "Water", amount: t.macros.waterLiters, unit: "L", note: "Rough fluid target from body weight" },
+      ];
   const tbody = document.querySelector("#out-t-macros tbody");
   tbody.innerHTML = "";
   for (const row of macroBody) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${row.name}</td><td>${row.amount} ${row.unit}</td><td class="muted">${row.note}</td>`;
+    const amt = row.amount === "—" ? "—" : `${row.amount} ${row.unit}`.trim();
+    tr.innerHTML = `<td>${row.name}</td><td>${amt}</td><td class="muted">${row.note}</td>`;
     tbody.appendChild(tr);
   }
 
@@ -145,7 +140,9 @@ function fillNutritionKit(kit, disclaimer) {
   document.getElementById("out-kit-summary").textContent = kit.summary || "";
   document.getElementById("out-kit-protein").textContent = `${kit.daily.proteinTargetG} g`;
   document.getElementById("out-kit-protein-detail").textContent =
-    `Food ~${kit.daily.proteinFromFoodG}g + whey ~${kit.daily.proteinFromWheyG}g · ${kit.daily.caloriesTarget} kcal/day`;
+    kit.title && kit.title.toLowerCase().includes("alternative")
+      ? `Food ~${kit.daily.proteinFromFoodG}g + whey ~${kit.daily.proteinFromWheyG}g`
+      : `Food ~${kit.daily.proteinFromFoodG}g + whey ~${kit.daily.proteinFromWheyG}g · ${kit.daily.caloriesTarget} kcal/day`;
   document.getElementById("out-kit-whey").textContent = `${kit.daily.wheyScoops} scoop(s)`;
   document.getElementById("out-kit-whey-detail").textContent = "Confirm grams on your whey label";
   document.getElementById("out-kit-fluid").textContent = `~${kit.daily.waterLiters} L`;
@@ -204,15 +201,18 @@ function fillFoodPlan(fp, disclaimer) {
   }
   const altFood =
     fp.priorityGoals?.mode === "alt_protein_micros" || fp.style === "alternative";
+  const cfWrap = document.getElementById("out-food-stat-cf-wrap");
   if (altFood) {
-    document.getElementById("out-food-primary-badge").textContent = "Protein goal";
+    document.getElementById("out-food-primary-badge").textContent = "Protein from kit";
     document.getElementById("out-food-primary-stat").textContent = `${fp.dayTotals.proteinG} g`;
     document.getElementById("out-food-primary-detail").textContent =
-      `Target ${fp.targets.proteinG}g · hit ${fp.macroHit.proteinPctOfTarget}%`;
-    document.getElementById("out-food-secondary-badge").textContent = "Day food kcal";
-    document.getElementById("out-food-secondary-stat").textContent = `${fp.dayTotals.kcal} kcal`;
+      `Goal ${fp.targets.proteinG}g · hit ${fp.macroHit.proteinPctOfTarget}%`;
+    document.getElementById("out-food-secondary-badge").textContent = "Shortfalls";
+    document.getElementById("out-food-secondary-stat").textContent =
+      `${(fp.shortfalls || []).length}`;
     document.getElementById("out-food-secondary-detail").textContent =
-      `Target ${fp.targets.kcal} · hit ${fp.macroHit.kcalPctOfTarget}%`;
+      "Nutrients still below target after kit — see options";
+    if (cfWrap) cfWrap.hidden = true;
   } else {
     document.getElementById("out-food-primary-badge").textContent = "Day kcal";
     document.getElementById("out-food-primary-stat").textContent = `${fp.dayTotals.kcal} kcal`;
@@ -222,14 +222,33 @@ function fillFoodPlan(fp, disclaimer) {
     document.getElementById("out-food-secondary-stat").textContent = `${fp.dayTotals.proteinG} g`;
     document.getElementById("out-food-secondary-detail").textContent =
       `Target ${fp.targets.proteinG}g · hit ${fp.macroHit.proteinPctOfTarget}%`;
+    if (cfWrap) cfWrap.hidden = false;
+    document.getElementById("out-food-cf").textContent =
+      `${fp.dayTotals.carbsG}g / ${fp.dayTotals.fatG}g`;
+    document.getElementById("out-food-cf-detail").textContent =
+      `Targets ${fp.targets.carbsG}g carbs · ${fp.targets.fatG}g fat · fiber ${fp.targets.fiberG}g`;
   }
-  document.getElementById("out-food-cf").textContent =
-    `${fp.dayTotals.carbsG}g / ${fp.dayTotals.fatG}g`;
-  document.getElementById("out-food-cf-detail").textContent =
-    `Targets ${fp.targets.carbsG}g carbs · ${fp.targets.fatG}g fat · fiber ${fp.targets.fiberG}g`;
 
   fillList(document.getElementById("out-food-kit-gaps"), fp.kitGapSummary || []);
 
+  const shortWrap = document.getElementById("out-food-shortfalls-wrap");
+  const shortBody = document.querySelector("#out-food-shortfalls tbody");
+  if (shortWrap && shortBody) {
+    if (altFood && (fp.shortfalls || []).length) {
+      shortWrap.hidden = false;
+      shortBody.innerHTML = "";
+      for (const s of fp.shortfalls) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${s.category}</td><td>${s.name}</td><td>${s.fromKit} / ${s.target} ${s.unit}</td><td><strong>${s.shortfall} ${s.unit}</strong></td><td class="muted">${(s.suggestions || []).join(" · ")}</td>`;
+        shortBody.appendChild(tr);
+      }
+    } else {
+      shortWrap.hidden = true;
+      shortBody.innerHTML = "";
+    }
+  }
+
+  const kitMacroWrap = document.getElementById("out-food-kit-macro-wrap");
   const kitBody = document.querySelector("#out-food-kit-macro tbody");
   if (kitBody) {
     kitBody.innerHTML = "";
@@ -240,13 +259,26 @@ function fillFoodPlan(fp, disclaimer) {
       kitBody.appendChild(tr);
     }
   }
+  if (kitMacroWrap) {
+    kitMacroWrap.hidden = altFood && !(fp.kitMacroGaps || []).length;
+  }
 
+  const itemHead = document.getElementById("out-food-itemized-head");
   const itemBody = document.querySelector("#out-food-itemized tbody");
+  if (itemHead) {
+    itemHead.innerHTML = altFood
+      ? "<tr><th>#</th><th>Block</th><th>Kit item</th><th>Portion</th><th>Protein</th><th>Source</th></tr>"
+      : "<tr><th>#</th><th>Meal</th><th>Food</th><th>Portion</th><th>kcal</th><th>P</th><th>C</th><th>F</th><th>Source</th></tr>";
+  }
   if (itemBody) {
     itemBody.innerHTML = "";
     for (const row of fp.itemized || []) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${row.line}</td><td>${row.meal}</td><td>${row.food}</td><td>${row.portion}</td><td>${row.kcal}</td><td>${row.proteinG}</td><td>${row.carbsG}</td><td>${row.fatG}</td><td>${row.source}</td>`;
+      if (altFood) {
+        tr.innerHTML = `<td>${row.line}</td><td>${row.meal}</td><td>${row.food}</td><td>${row.portion}</td><td>${row.proteinG}g</td><td>${row.source}</td>`;
+      } else {
+        tr.innerHTML = `<td>${row.line}</td><td>${row.meal}</td><td>${row.food}</td><td>${row.portion}</td><td>${row.kcal}</td><td>${row.proteinG}</td><td>${row.carbsG}</td><td>${row.fatG}</td><td>${row.source}</td>`;
+      }
       itemBody.appendChild(tr);
     }
   }
@@ -258,20 +290,44 @@ function fillFoodPlan(fp, disclaimer) {
     block.style.marginBottom = "1rem";
     const h = document.createElement("h4");
     h.style.margin = "0 0 0.35rem";
-    h.textContent = `${meal.name} (${meal.timeHint || ""}) · ${meal.totals.kcal} kcal · P ${meal.totals.proteinG}g · C ${meal.totals.carbsG}g · F ${meal.totals.fatG}g`;
+    h.textContent = altFood
+      ? `${meal.name} (${meal.timeHint || ""}) · P ${meal.totals.proteinG}g`
+      : `${meal.name} (${meal.timeHint || ""}) · ${meal.totals.kcal} kcal · P ${meal.totals.proteinG}g · C ${meal.totals.carbsG}g · F ${meal.totals.fatG}g`;
     const table = document.createElement("table");
     table.className = "data-table";
-    table.innerHTML =
-      "<thead><tr><th>Food</th><th>Portion</th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Source</th></tr></thead>";
+    table.innerHTML = altFood
+      ? "<thead><tr><th>Kit item</th><th>Portion</th><th>Protein</th><th>Source</th></tr></thead>"
+      : "<thead><tr><th>Food</th><th>Portion</th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Source</th></tr></thead>";
     const tbody = document.createElement("tbody");
     for (const item of meal.items || []) {
       const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${item.name}</td><td>${item.portion}</td><td>${item.kcal}</td><td>${item.proteinG}g</td><td>${item.carbsG}g</td><td>${item.fatG}g</td><td>${item.kit ? "kit" : "food"}</td>`;
+      if (altFood) {
+        tr.innerHTML = `<td>${item.name}</td><td>${item.portion}</td><td>${item.proteinG}g</td><td>${item.kit ? "kit" : "food"}</td>`;
+      } else {
+        tr.innerHTML = `<td>${item.name}</td><td>${item.portion}</td><td>${item.kcal}</td><td>${item.proteinG}g</td><td>${item.carbsG}g</td><td>${item.fatG}g</td><td>${item.kit ? "kit" : "food"}</td>`;
+      }
       tbody.appendChild(tr);
     }
     table.appendChild(tbody);
     block.append(h, table);
     mealsEl.appendChild(block);
+  }
+
+  const itemizedTitle = document.getElementById("out-food-itemized-title");
+  if (itemizedTitle) {
+    itemizedTitle.textContent = altFood
+      ? "Kit-only day (no grocery foods listed)"
+      : "Itemized day plan (every food)";
+  }
+  const mealsTitle = document.getElementById("out-food-meals-title");
+  if (mealsTitle) {
+    mealsTitle.textContent = altFood ? "Kit blocks" : "Meals (grouped)";
+  }
+  const shopTitle = document.getElementById("out-food-shop-title");
+  if (shopTitle) {
+    shopTitle.textContent = altFood
+      ? "Kit + foods to close shortfalls"
+      : "Shopping list";
   }
 
   fillCoverageTable("out-food-vit", fp.vitamins);
@@ -327,7 +383,21 @@ function fillProgress(wp, disclaimer) {
 
   const calSel = document.getElementById("adj-calories");
   const exSel = document.getElementById("adj-exercise");
-  if (calSel && wp.plan) calSel.value = String(wp.plan.calorieAdjust || 0);
+  const calLabel = document.getElementById("adj-calories-label");
+  const isAltForecast =
+    (wp.pace?.note || "").toLowerCase().includes("alternative") ||
+    (wp.pace?.note || "").toLowerCase().includes("fat-store") ||
+    (wp.pace?.note || "").toLowerCase().includes("fat store") ||
+    (wp.pace?.note || "").toLowerCase().includes("reserves");
+  if (calLabel) {
+    if (isAltForecast) {
+      calLabel.hidden = true;
+      if (calSel) calSel.value = "0";
+    } else {
+      calLabel.hidden = false;
+    }
+  }
+  if (calSel && wp.plan && !isAltForecast) calSel.value = String(wp.plan.calorieAdjust || 0);
   if (exSel && wp.plan) exSel.value = String(wp.plan.exerciseBonusKcal || 0);
 }
 

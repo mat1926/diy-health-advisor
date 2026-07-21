@@ -174,8 +174,8 @@ export function buildWeightProgressForecast(
     },
     modifiersHint: altProteinMicros
       ? targets.fatStores && targets.fatStores.excessLb > 0
-        ? `Food covers protein + micros (~${targets.calories.dailyTarget} kcal); energy gap is assumed from fat stores. Adjust food calories or exercise to change the store-draw rate.`
-        : "Alternative plan uses a food deficit. Adjust calories or exercise below to update the forecast and food plan."
+        ? `Hit protein + micros from kit/food options; energy gap is assumed from fat stores. Adjust store-draw pace via exercise — no calorie target on Alternative.`
+        : "Alternative: protein + micros primary (no calorie target). Adjust exercise below to update the forecast."
       : "Use the controls below to cut more calories or add exercise burn, then update the forecast and food plan.",
   };
 }

@@ -56,6 +56,17 @@ export type KitMacroGap = {
   verdict: string;
 };
 
+/** Nutrients still short after kit-only (Alternative) — with food options to close the gap. */
+export type NutrientShortfall = {
+  category: "macro" | "amino_acid" | "vitamin" | "mineral";
+  name: string;
+  target: number;
+  fromKit: number;
+  shortfall: number;
+  unit: string;
+  suggestions: string[];
+};
+
 export type DetailedFoodPlan = {
   disclaimer: string;
   title: string;
@@ -75,6 +86,8 @@ export type DetailedFoodPlan = {
   /** What whey + NOW multi/D3 do NOT cover for macros (and related). */
   kitMacroGaps: KitMacroGap[];
   kitGapSummary: string[];
+  /** Alternative: nutrients below target after kit-only, with closing options. */
+  shortfalls: NutrientShortfall[];
   /** Flat itemized day plan (every food line). */
   itemized: ItemizedFoodLine[];
   meals: MealBlock[];
@@ -180,78 +193,134 @@ function multiItem(sex: MetricsInput["sex"]): FoodItem {
   };
 }
 
-/** Alternative: protein + micronutrient dense day (carbs/fat are fuel, not goals). */
-function altProteinMicrosTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock[] {
-  const breakfast: FoodItem[] = [
-    { name: "Eggs", portion: "4 large", kcal: 280, proteinG: 24, carbsG: 2, fatG: 20 },
-    { name: "Spinach (sautéed)", portion: "2 cups cooked", kcal: 60, proteinG: 5, carbsG: 6, fatG: 1 },
-    { name: "Sardines or smoked salmon (optional add)", portion: "2 oz", kcal: 120, proteinG: 14, carbsG: 0, fatG: 7 },
-    multiItem(sex),
-  ];
-  const breakfastScoopsEarly = Math.min(scoops, 2);
-  if (breakfastScoopsEarly >= 1) breakfast.push(wheyShake(breakfastScoopsEarly));
+/** Alternative: kit-only day (whey + multi). Food is suggested only to close shortfalls. */
+function altKitOnlyTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock[] {
+  const morning: FoodItem[] = [multiItem(sex)];
+  const shakeScoops = Math.min(scoops, 2);
+  if (shakeScoops >= 1) morning.push(wheyShake(shakeScoops));
 
-  const lunch: FoodItem[] = [
-    { name: "Chicken breast or turkey", portion: "8 oz cooked", kcal: 370, proteinG: 70, carbsG: 0, fatG: 8 },
-    { name: "Mixed leafy greens + herbs", portion: "Large bowl (3+ cups)", kcal: 40, proteinG: 3, carbsG: 6, fatG: 0 },
-    { name: "Olive oil dressing", portion: "1 tbsp", kcal: 120, proteinG: 0, carbsG: 0, fatG: 14 },
-    { name: "Broccoli or asparagus", portion: "2 cups", kcal: 60, proteinG: 5, carbsG: 11, fatG: 0.5 },
-  ];
-
-  const dinner: FoodItem[] = [
-    { name: "Salmon, beef, or liver rotation", portion: "6 oz cooked", kcal: 340, proteinG: 36, carbsG: 0, fatG: 20 },
-    { name: "Brussels sprouts or kale", portion: "2 cups", kcal: 70, proteinG: 5, carbsG: 12, fatG: 1 },
-    { name: "Bone broth or mineral water", portion: "1 cup broth", kcal: 40, proteinG: 6, carbsG: 0, fatG: 1 },
-  ];
-
-  const snacks: FoodItem[] = [
-    { name: "Greek yogurt (plain, full-fat or 2%)", portion: "1 cup", kcal: 180, proteinG: 20, carbsG: 8, fatG: 8 },
-    { name: "Pumpkin seeds", portion: "1 oz", kcal: 150, proteinG: 8, carbsG: 4, fatG: 13 },
-  ];
-  const snackScoops = Math.max(0, scoops - Math.min(scoops, 2));
-  if (snackScoops > 0) snacks.unshift(wheyShake(snackScoops));
-
-  return [
-    { name: "Breakfast", timeHint: "Protein + multi + greens", items: breakfast, totals: sumItems(breakfast) },
-    { name: "Lunch", timeHint: "Largest protein block", items: lunch, totals: sumItems(lunch) },
-    { name: "Dinner", timeHint: "Protein + minerals (greens)", items: dinner, totals: sumItems(dinner) },
-    { name: "Snacks / shake", timeHint: "Close protein / AA gap", items: snacks, totals: sumItems(snacks) },
-  ];
-}
-
-/** Scale alternative meals primarily to hit protein; keep near calorie cap for fat-loss forecast. */
-function scaleAltForProtein(
-  meals: MealBlock[],
-  proteinTarget: number,
-  calorieCap: number,
-): MealBlock[] {
-  const currentP = meals.reduce((s, m) => s + m.totals.proteinG, 0) || 1;
-  let factor = proteinTarget / currentP;
-  factor = Math.max(0.7, Math.min(1.5, factor));
-
-  let scaled = meals.map((meal) => {
-    const items = meal.items.map((i) => {
-      if (i.kit && i.kcal === 0) return i; // multi
-      if (i.kit) return i; // keep whey scoops as planned
-      return scaleItem(i, factor);
-    });
-    return { ...meal, items, totals: sumItems(items) };
-  });
-
-  let kcal = scaled.reduce((s, m) => s + m.totals.kcal, 0);
-  if (kcal > calorieCap * 1.08) {
-    const trim = calorieCap / kcal;
-    scaled = scaled.map((meal) => {
-      const items = meal.items.map((i) => {
-        if (i.kit) return i;
-        // Trim fat-forward foods slightly more via uniform scale
-        return scaleItem(i, Math.max(0.65, trim));
-      });
-      return { ...meal, items, totals: sumItems(items) };
+  const later: FoodItem[] = [];
+  const rest = Math.max(0, scoops - shakeScoops);
+  if (rest > 0) later.push(wheyShake(rest));
+  if (later.length === 0) {
+    later.push({
+      name: "Strada shaker (kit)",
+      portion: "Water / fluids as needed",
+      kcal: 0,
+      proteinG: 0,
+      carbsG: 0,
+      fatG: 0,
+      kit: true,
+      notes: KIT_PRODUCTS.shaker.url,
     });
   }
-  return scaled;
+
+  return [
+    {
+      name: "Kit — morning",
+      timeHint: "Multi + whey",
+      items: morning,
+      totals: sumItems(morning),
+    },
+    {
+      name: "Kit — later",
+      timeHint: "Remaining whey / fluids",
+      items: later,
+      totals: sumItems(later),
+    },
+  ];
 }
+
+const SHORTFALL_SUGGESTIONS: Record<string, string[]> = {
+  Protein: [
+    "Eggs (2–4)",
+    "Chicken or turkey breast (4–8 oz)",
+    "Greek yogurt (1 cup)",
+    "Salmon / white fish (4–6 oz)",
+    "Extra whey scoop if your label and tolerance allow",
+  ],
+  Histidine: ["Whey", "Chicken", "Eggs", "Fish"],
+  Isoleucine: ["Whey", "Eggs", "Turkey", "Greek yogurt"],
+  Leucine: ["Whey", "Chicken", "Eggs", "Cottage cheese"],
+  Lysine: ["Whey", "Fish", "Chicken", "Greek yogurt"],
+  "Methionine + Cysteine": ["Eggs", "Fish", "Poultry", "Whey"],
+  "Phenylalanine + Tyrosine": ["Eggs", "Dairy", "Meat", "Whey"],
+  Threonine: ["Whey", "Poultry", "Eggs"],
+  Tryptophan: ["Turkey", "Eggs", "Dairy", "Whey"],
+  Valine: ["Whey", "Meat", "Dairy", "Eggs"],
+  "Total essential amino acids (sum of above)": [
+    "Hit the protein target with whey + eggs/meat/fish/dairy",
+  ],
+  "Vitamin A (food-first)": ["Eggs", "Liver (occasional)", "Leafy greens", "Salmon"],
+  "Vitamin C": ["Bell peppers", "Broccoli", "Berries", "Citrus if tolerated"],
+  "Vitamin D": [
+    "Fatty fish (salmon/sardines)",
+    "Sun exposure as appropriate",
+    "Clinician-guided D3 — do not self-dose kit 10,000 IU",
+  ],
+  "Vitamin E": ["Almonds", "Sunflower seeds", "Avocado", "Olive oil"],
+  "Vitamin K": ["Kale", "Spinach", "Broccoli", "Brussels sprouts"],
+  "Thiamin (B1)": ["Pork", "Eggs", "Seeds", "Nutritional yeast if used"],
+  "Riboflavin (B2)": ["Eggs", "Dairy", "Liver (occasional)", "Almonds"],
+  "Niacin (B3)": ["Chicken", "Turkey", "Fish", "Mushrooms"],
+  "Vitamin B6": ["Chicken", "Fish", "Eggs", "Spinach"],
+  "Folate (DFE)": ["Leafy greens", "Broccoli", "Asparagus", "Liver (occasional)"],
+  "Vitamin B12": ["Eggs", "Fish", "Meat", "Dairy"],
+  "Pantothenic acid (B5)": ["Eggs", "Avocado", "Chicken", "Mushrooms"],
+  Biotin: ["Eggs", "Nuts", "Seeds"],
+  Choline: ["Eggs (best DIY source)", "Liver (occasional)", "Soy if tolerated"],
+  Calcium: ["Greek yogurt", "Cheese", "Canned sardines with bones", "Leafy greens"],
+  Iron: ["Red meat", "Liver (occasional)", "Pumpkin seeds", "Pair with vitamin C foods"],
+  Magnesium: ["Pumpkin seeds", "Leafy greens", "Almonds", "Dark chocolate (small)"],
+  Zinc: ["Beef", "Pumpkin seeds", "Eggs", "Shellfish if eaten"],
+  Potassium: ["Avocado", "Leafy greens", "Salmon", "Bone broth", "Zucchini"],
+  Phosphorus: ["Eggs", "Dairy", "Meat", "Fish"],
+  Selenium: ["Brazil nuts (1–2)", "Fish", "Eggs", "Poultry"],
+  Iodine: ["Seafood", "Dairy", "Eggs", "Iodized salt sparingly"],
+  Copper: ["Liver (occasional)", "Nuts", "Seeds", "Dark chocolate (small)"],
+  Manganese: ["Nuts", "Seeds", "Leafy greens", "Tea"],
+  Chromium: ["Broccoli", "Eggs", "Meat"],
+};
+
+function suggestionsFor(name: string): string[] {
+  return (
+    SHORTFALL_SUGGESTIONS[name] ?? [
+      "Add protein-forward whole foods (eggs, meat/fish, dairy, leafy greens)",
+      "Confirm NOW ADAM/EVE label dose is taken with food",
+    ]
+  );
+}
+
+/** Vitamins typically well covered by NOW ADAM/EVE when taken as labeled (educational). */
+const MULTI_COVERED_VITAMINS = new Set([
+  "Vitamin A (food-first)",
+  "Vitamin A (RAE)",
+  "Vitamin C",
+  "Vitamin E",
+  "Vitamin K",
+  "Thiamin (B1)",
+  "Riboflavin (B2)",
+  "Niacin (B3)",
+  "Vitamin B6",
+  "Folate (DFE)",
+  "Vitamin B12",
+  "Pantothenic acid (B5)",
+  "Biotin",
+]);
+
+/** Minerals with meaningful multi contribution (educational — labels vary). */
+const MULTI_HELP_MINERALS = new Set([
+  "Calcium",
+  "Iron",
+  "Magnesium",
+  "Zinc",
+  "Phosphorus",
+  "Selenium",
+  "Iodine",
+  "Copper",
+  "Manganese",
+  "Chromium",
+]);
 
 /** CDC-style higher-carb day template (pre-scale). */
 function cdcTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock[] {
@@ -325,23 +394,24 @@ export function buildDetailedFoodPlan(
   const perspective = resolvePerspective(m.perspective);
   const alt = perspective !== "cdc";
   const proteinTarget = targets.macros.proteinG;
-  // Alternative: more whey to secure protein/AA; CDC keeps ~60% food protein assumption
-  const foodProteinShare = alt ? 0.5 : 0.6;
-  const foodProtein = Math.round(proteinTarget * foodProteinShare);
-  const gap = Math.max(0, proteinTarget - foodProtein);
-  const wheyScoops = Math.min(3, Math.max(alt ? 1 : 0, Math.ceil(gap / WHEY_SCOOP_PROTEIN)));
+
+  // Alt = kit-only protein (whey); CDC still assumes ~60% food protein + whey gap
+  const wheyScoops = alt
+    ? Math.min(3, Math.max(1, Math.ceil(proteinTarget / WHEY_SCOOP_PROTEIN)))
+    : Math.min(
+        3,
+        Math.max(0, Math.ceil((proteinTarget - Math.round(proteinTarget * 0.6)) / WHEY_SCOOP_PROTEIN)),
+      );
   const wheyProteinG = wheyScoops * WHEY_SCOOP_PROTEIN;
 
   const sex = m.sex ?? "prefer_not";
   const multiName = sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name;
   const multiUrl = sex === "female" ? KIT_PRODUCTS.eve.url : KIT_PRODUCTS.adam.url;
 
-  let meals = alt
-    ? altProteinMicrosTemplate(wheyScoops, sex)
-    : cdcTemplate(wheyScoops, sex);
-  meals = alt
-    ? scaleAltForProtein(meals, proteinTarget, targets.calories.dailyTarget)
-    : scaleMeals(meals, targets.calories.dailyTarget);
+  let meals = alt ? altKitOnlyTemplate(wheyScoops, sex) : cdcTemplate(wheyScoops, sex);
+  if (!alt) {
+    meals = scaleMeals(meals, targets.calories.dailyTarget);
+  }
 
   const dayTotals = meals.reduce(
     (a, meal) => ({
@@ -353,7 +423,7 @@ export function buildDetailedFoodPlan(
     }),
     { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0 },
   );
-  dayTotals.fiberG = targets.macros.fiberG;
+  dayTotals.fiberG = alt ? 0 : targets.macros.fiberG;
   dayTotals.kcal = Math.round(dayTotals.kcal);
   dayTotals.proteinG = Math.round(dayTotals.proteinG);
   dayTotals.carbsG = Math.round(dayTotals.carbsG);
@@ -362,55 +432,124 @@ export function buildDetailedFoodPlan(
   const pct = (got: number, want: number) =>
     want > 0 ? Math.round((got / want) * 100) : 100;
 
-  // Educational micronutrient coverage: food estimates + multi contribution notes
-  const vitamins: NutrientCoverage[] = targets.vitamins.slice(0, 10).map((v) => {
+  const proteinRatio = Math.min(1.15, dayTotals.proteinG / Math.max(1, proteinTarget));
+  const shortfalls: NutrientShortfall[] = [];
+
+  const pushShortfall = (
+    category: NutrientShortfall["category"],
+    name: string,
+    target: number,
+    fromKit: number,
+    unit: string,
+  ) => {
+    const shortfall = Math.max(0, Math.round((target - fromKit) * 10) / 10);
+    if (shortfall <= 0 || (target > 0 && fromKit / target >= 0.9)) return;
+    shortfalls.push({
+      category,
+      name,
+      target,
+      fromKit: Math.round(fromKit * 10) / 10,
+      shortfall,
+      unit,
+      suggestions: suggestionsFor(name),
+    });
+  };
+
+  // Educational micronutrient coverage
+  const vitamins: NutrientCoverage[] = targets.vitamins.map((v) => {
     const isD = v.name.startsWith("Vitamin D");
-    const isC = v.name.startsWith("Vitamin C");
-    const isB12 = v.name.includes("B12");
-    const fromPlan = isD ? v.amount * 0.15 : isC ? v.amount * 0.7 : isB12 ? v.amount * 0.5 : v.amount * 0.55;
-    return coverage(
-      v.name,
-      v.amount,
-      v.unit,
-      fromPlan,
-      isD ? "kit D3 clinician-only — do not self-dose 10k IU" : "NOW ADAM/EVE typically covers much of daily need",
-      v.note,
-    );
+    const isCholine = v.name === "Choline";
+    let fromPlan: number;
+    let fromMulti: string;
+    if (alt) {
+      if (isD) {
+        // Multi may include modest D; kit 10k IU stays clinician-gated and is not counted
+        fromPlan = v.amount * 0.5;
+        fromMulti = "Multi may include modest D — kit 10k IU not counted / clinician-only";
+      } else if (isCholine) {
+        fromPlan = v.amount * 0.15;
+        fromMulti = "Multi usually low in choline — food needed";
+      } else if (MULTI_COVERED_VITAMINS.has(v.name)) {
+        fromPlan = v.amount;
+        fromMulti = "NOW ADAM/EVE (kit) — as labeled";
+      } else {
+        fromPlan = v.amount * 0.4;
+        fromMulti = "Partial from multi — confirm label";
+      }
+    } else {
+      const isC = v.name.startsWith("Vitamin C");
+      const isB12 = v.name.includes("B12");
+      fromPlan = isD ? v.amount * 0.15 : isC ? v.amount * 0.7 : isB12 ? v.amount * 0.5 : v.amount * 0.55;
+      fromMulti = isD
+        ? "kit D3 clinician-only — do not self-dose 10k IU"
+        : "NOW ADAM/EVE typically covers much of daily need";
+    }
+    const row = coverage(v.name, v.amount, v.unit, fromPlan, fromMulti, v.note);
+    if (alt && row.status !== "on_track") {
+      pushShortfall("vitamin", v.name, v.amount, fromPlan, v.unit);
+    }
+    return row;
   });
 
-  const minerals: NutrientCoverage[] = targets.minerals.slice(0, 10).map((min) => {
+  const minerals: NutrientCoverage[] = targets.minerals.map((min) => {
     const isNa = min.name === "Sodium";
-    const isMg = min.name === "Magnesium";
     const isK = min.name === "Potassium";
-    const fromPlan = isNa ? min.amount * 0.8 : isMg ? min.amount * 0.55 : isK ? min.amount * 0.65 : min.amount * 0.5;
-    return coverage(
-      min.name,
-      min.amount,
-      min.unit,
-      fromPlan,
-      isNa ? "—" : "Multi helps; food still primary for K/Mg",
-      min.note,
-    );
+    const isMg = min.name === "Magnesium";
+    let fromPlan: number;
+    let fromMulti: string;
+    if (alt) {
+      if (isNa) {
+        // Not a “hit this” target on Alternative — skip shortfall
+        fromPlan = min.amount;
+        fromMulti = "Upper-limit style figure — not a kit hit-target";
+      } else if (isK) {
+        fromPlan = min.amount * 0.05;
+        fromMulti = "Multi does not meaningfully cover potassium — food needed";
+      } else if (isMg) {
+        fromPlan = min.amount * 0.45;
+        fromMulti = "Multi helps partially — greens/seeds usually still needed";
+      } else if (MULTI_HELP_MINERALS.has(min.name)) {
+        fromPlan = min.amount * 0.85;
+        fromMulti = "NOW ADAM/EVE (kit) — as labeled";
+      } else {
+        fromPlan = min.amount * 0.3;
+        fromMulti = "Limited from multi — food focus";
+      }
+    } else {
+      fromPlan = isNa ? min.amount * 0.8 : isMg ? min.amount * 0.55 : isK ? min.amount * 0.65 : min.amount * 0.5;
+      fromMulti = isNa ? "—" : "Multi helps; food still primary for K/Mg";
+    }
+    const row = coverage(min.name, min.amount, min.unit, fromPlan, fromMulti, min.note);
+    if (alt && !isNa && row.status !== "on_track") {
+      pushShortfall("mineral", min.name, min.amount, fromPlan, min.unit);
+    }
+    return row;
   });
 
-  const aminoAcids: NutrientCoverage[] = targets.aminoAcids.slice(0, 9).map((aa) => {
-    // Hitting protein target with whey + animal/dairy foods usually covers EAAs
-    const fromPlan = aa.amount * Math.min(1.1, dayTotals.proteinG / Math.max(1, proteinTarget));
-    return coverage(
+  const aminoAcids: NutrientCoverage[] = targets.aminoAcids.map((aa) => {
+    const fromPlan = aa.amount * proteinRatio;
+    const row = coverage(
       aa.name,
       aa.amount,
       aa.unit,
       fromPlan,
-      "Whey + meat/fish/eggs/yogurt",
+      alt ? "From kit whey protein (complete protein)" : "Whey + meat/fish/eggs/yogurt",
       aa.note,
     );
+    if (alt && row.status !== "on_track") {
+      pushShortfall("amino_acid", aa.name, aa.amount, fromPlan, aa.unit);
+    }
+    return row;
   });
+
+  if (alt) {
+    pushShortfall("macro", "Protein", proteinTarget, wheyProteinG, "g");
+  }
 
   const wheyKcal = wheyScoops * WHEY_SCOOP_KCAL;
   const wheyCarbsG = wheyScoops * 2;
   const wheyFatG = wheyScoops * 1;
 
-  // NOW ADAM/EVE and D3 contribute ~0 macronutrients
   const gapRow = (
     nutrient: string,
     target: number,
@@ -423,62 +562,74 @@ export function buildDetailedFoodPlan(
     return { nutrient, target, unit, fromKit, stillNeededFromFood: still, kitCoversPct, verdict };
   };
 
-  const kitMacroGaps: KitMacroGap[] = [
-    gapRow(
-      "Calories",
-      targets.calories.dailyTarget,
-      "kcal",
-      wheyKcal,
-      "NOW multi/D3 ≈ 0 kcal. Almost all calories must come from food (plus whey scoops only).",
-    ),
-    gapRow(
-      "Protein",
-      targets.macros.proteinG,
-      "g",
-      wheyProteinG,
-      wheyScoops > 0
-        ? `Whey covers ~${wheyProteinG}g; remaining protein must come from eggs/meat/fish/dairy/plants. Multi adds ~0g protein.`
-        : "No whey scoops planned — all protein from food. Multi adds ~0g protein.",
-    ),
-    gapRow(
-      "Carbohydrates",
-      targets.macros.carbsG,
-      "g",
-      wheyCarbsG,
-      "Whey has only trace carbs; NOW multi/D3 ≈ 0g carbs. Carbs are almost entirely from food.",
-    ),
-    gapRow(
-      "Fat",
-      targets.macros.fatG,
-      "g",
-      wheyFatG,
-      "Whey has only trace fat; NOW multi/D3 ≈ 0g fat. Fat is almost entirely from food (oils, avocado, meat, eggs, nuts).",
-    ),
-    gapRow(
-      "Fiber",
-      targets.macros.fiberG,
-      "g",
-      0,
-      "Not covered by whey or NOW supplements. Fiber must come from vegetables, fruit, legumes, and/or whole grains.",
-    ),
-    gapRow(
-      "Water / fluids",
-      targets.macros.waterLiters,
-      "L",
-      0,
-      "Shaker helps habit, but fluid volume is not a supplement nutrient — drink water/other fluids separately.",
-    ),
-  ];
+  const kitMacroGaps: KitMacroGap[] = alt
+    ? [
+        gapRow(
+          "Protein",
+          targets.macros.proteinG,
+          "g",
+          wheyProteinG,
+          `Kit whey (~${wheyScoops} scoop(s)) covers ~${wheyProteinG}g. Add food options below if short of ~${proteinTarget}g.`,
+        ),
+      ]
+    : [
+        gapRow(
+          "Calories",
+          targets.calories.dailyTarget,
+          "kcal",
+          wheyKcal,
+          "NOW multi/D3 ≈ 0 kcal. Almost all calories must come from food (plus whey scoops only).",
+        ),
+        gapRow(
+          "Protein",
+          targets.macros.proteinG,
+          "g",
+          wheyProteinG,
+          wheyScoops > 0
+            ? `Whey covers ~${wheyProteinG}g; remaining protein must come from eggs/meat/fish/dairy/plants. Multi adds ~0g protein.`
+            : "No whey scoops planned — all protein from food. Multi adds ~0g protein.",
+        ),
+        gapRow(
+          "Carbohydrates",
+          targets.macros.carbsG,
+          "g",
+          wheyCarbsG,
+          "Whey has only trace carbs; NOW multi/D3 ≈ 0g carbs. Carbs are almost entirely from food.",
+        ),
+        gapRow(
+          "Fat",
+          targets.macros.fatG,
+          "g",
+          wheyFatG,
+          "Whey has only trace fat; NOW multi/D3 ≈ 0g fat. Fat is almost entirely from food (oils, avocado, meat, eggs, nuts).",
+        ),
+        gapRow(
+          "Fiber",
+          targets.macros.fiberG,
+          "g",
+          0,
+          "Not covered by whey or NOW supplements. Fiber must come from vegetables, fruit, legumes, and/or whole grains.",
+        ),
+        gapRow(
+          "Water / fluids",
+          targets.macros.waterLiters,
+          "L",
+          0,
+          "Shaker helps habit, but fluid volume is not a supplement nutrient — drink water/other fluids separately.",
+        ),
+      ];
 
   const kitGapSummary = alt
     ? [
-        "Alternative priority: hit protein, amino acids, vitamins, and minerals — not carb/fat quotas.",
+        "Alternative plan shows kit products only (whey + NOW multi + Strada). No calorie target.",
+        `Protein from kit whey ≈ ${wheyProteinG}g of ~${proteinTarget}g goal.`,
+        shortfalls.length > 0
+          ? `${shortfalls.length} nutrient(s) still below target after kit — see shortfalls with food options.`
+          : "Kit appears to cover listed primary targets on this educational model (verify labels).",
         targets.fatStores && targets.fatStores.excessLb > 0
-          ? `${targets.fatStores.reservesLine} Food ≈ ${targets.calories.dailyTarget} kcal; ~${targets.calories.fromFatStoresKcal ?? targets.fatStores.dailyDrawKcal} kcal/day assumed from body fat.`
-          : "Little excess above ideal BMI — keep food near the calorie target; limited store draw modeled.",
-        "NOW ADAM/EVE cover many vitamins/minerals; whey covers a large share of protein/EAAs.",
-        `Still need food for remaining protein (~${Math.max(0, proteinTarget - wheyProteinG)}g) and mineral-dense plants — not for filling all of TDEE with carbs/fat.`,
-        "NOW D3 10,000 IU stays clinician-gated — not part of the default daily menu.",
+          ? targets.fatStores.reservesLine
+          : "Little excess above ideal BMI modeled as fat stores.",
+        "NOW D3 10,000 IU stays clinician-gated — not counted toward vitamin D coverage.",
       ]
     : [
         "NOW ADAM/EVE and NOW D3 do not provide meaningful calories, protein, carbs, fat, or fiber.",
@@ -487,15 +638,6 @@ export function buildDetailedFoodPlan(
         "Potassium, sodium, and most food-matrix nutrients still come from meals even when a multi is used.",
         "High-dose D3 10,000 IU is not a daily macro or default vitamin D protocol from this app.",
       ];
-
-  if (alt) {
-    // Reframe carb/fat gap rows as non-primary
-    for (const row of kitMacroGaps) {
-      if (row.nutrient === "Carbohydrates" || row.nutrient === "Fat" || row.nutrient === "Fiber") {
-        row.verdict = `${row.nutrient} is NOT a primary Alternative target — flexible. Focus on protein + micros instead.`;
-      }
-    }
-  }
 
   const itemized: ItemizedFoodLine[] = [];
   let lineNo = 1;
@@ -516,18 +658,21 @@ export function buildDetailedFoodPlan(
     }
   }
 
+  const foodOptions = [
+    ...new Set(shortfalls.flatMap((s) => s.suggestions).slice(0, 24)),
+  ];
+
   const shoppingList = alt
     ? [
         KIT_PRODUCTS.whey.name,
         sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
         KIT_PRODUCTS.shaker.name,
-        "Eggs (dozen)",
-        "Chicken breast or turkey (2–3 lb)",
-        "Salmon or sardines",
-        "Leafy greens + broccoli/kale/Brussels",
-        "Greek yogurt (plain)",
-        "Pumpkin seeds",
-        "Olive oil + optional bone broth",
+        KIT_PRODUCTS.phStrips.name,
+        KIT_PRODUCTS.renphoBp.name,
+        KIT_PRODUCTS.renphoScale.name,
+        ...(foodOptions.length
+          ? ["— Foods to close shortfalls —", ...foodOptions]
+          : ["Kit covers modeled primary targets — add whole foods as desired"]),
       ]
     : [
         KIT_PRODUCTS.whey.name,
@@ -544,10 +689,12 @@ export function buildDetailedFoodPlan(
 
   const prepTips = alt
     ? [
-        "Primary checklist: (1) hit protein grams (2) take ADAM/EVE with food (3) eat leafy greens twice (4) whey closes AA/protein gaps.",
-        "Do not chase carb or fat grams — use them only to land near your calorie target for fat-loss forecast.",
-        `Mix whey in the Strada — about ${wheyScoops} scoop(s)/day toward ~${proteinTarget}g protein.`,
-        "Rotate salmon / beef / liver weekly for micronutrient density (if you eat them).",
+        "Use kit only as the base: whey scoops + ADAM/EVE with food (or a small snack if fasting is not a goal).",
+        `Mix ~${wheyScoops} whey scoop(s)/day in the Strada toward ~${proteinTarget}g protein.`,
+        shortfalls.length
+          ? `Close the ${shortfalls.length} shortfall(s) with the suggested foods — do not chase carbs/fat grams.`
+          : "No major shortfalls on this educational kit model — still eat real food for satiety and fiber.",
+        "Carbs and fat are flexible on Alternative — there is no calorie target in this plan view.",
         "NOW D3 10,000 IU: skip unless clinician-cleared.",
       ]
     : [
@@ -559,17 +706,25 @@ export function buildDetailedFoodPlan(
       ];
 
   const proteinHitPct = pct(dayTotals.proteinG, proteinTarget);
-  const aaHitPct = Math.min(120, proteinHitPct); // EAAs track protein quality on this template
+  const aaHitPct = Math.min(120, proteinHitPct);
 
   return {
-    disclaimer: FOOD_PLAN_DISCLAIMER,
+    disclaimer: alt
+      ? `Alternative kit-only plan: educational coverage from whey + NOW multi. Shortfalls list foods that can close gaps. Not a medical diet. Labels override app estimates. High-dose D3 stays clinician-gated.`
+      : FOOD_PLAN_DISCLAIMER,
     title: alt
-      ? "Alternative itemized plan (protein · vitamins · minerals · amino acids)"
+      ? "Alternative kit plan (whey · multi) + shortfalls to close"
       : "Detailed itemized food plan (CDC-style · kit-based)",
     summary: alt
-      ? targets.fatStores && targets.fatStores.excessLb > 0
-        ? `Protein-first Alternative day: ${targets.fatStores.reservesLine} Food ~${targets.calories.dailyTarget} kcal + ~${targets.calories.fromFatStoresKcal ?? 0} kcal from stores. Aim for ~${proteinTarget}g protein + vitamins/minerals/EAAs — not carb/fat quotas.`
-        : `Protein-first Alternative day (~${targets.calories.dailyTarget} kcal) built to hit ~${proteinTarget}g protein + multi-supported vitamins/minerals/EAAs. Carbs/fat are flexible.`
+      ? `Kit-only base: ~${wheyScoops} whey scoop(s) (~${wheyProteinG}g protein) + ${sex === "female" ? "EVE" : "ADAM"}. ${
+          shortfalls.length
+            ? `${shortfalls.length} nutrient(s) still below target — see options below.`
+            : "Modeled primary targets covered by kit (verify labels)."
+        }${
+          targets.fatStores?.excessLb
+            ? ` ${targets.fatStores.reservesLine}`
+            : ""
+        } No calorie target on Alternative.`
       : `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s) and ${sex === "female" ? "EVE" : "ADAM"}.`,
     style: alt ? "alternative" : "cdc",
     kitBase: {
@@ -585,34 +740,38 @@ export function buildDetailedFoodPlan(
     },
     kitMacroGaps,
     kitGapSummary,
+    shortfalls,
     itemized,
     meals,
     dayTotals,
     targets: {
-      kcal: targets.calories.dailyTarget,
+      kcal: alt ? 0 : targets.calories.dailyTarget,
       proteinG: targets.macros.proteinG,
-      carbsG: targets.macros.carbsG,
-      fatG: targets.macros.fatG,
-      fiberG: targets.macros.fiberG,
+      carbsG: alt ? 0 : targets.macros.carbsG,
+      fatG: alt ? 0 : targets.macros.fatG,
+      fiberG: alt ? 0 : targets.macros.fiberG,
     },
     macroHit: {
       proteinPctOfTarget: proteinHitPct,
-      carbsPctOfTarget: pct(dayTotals.carbsG, targets.macros.carbsG),
-      fatPctOfTarget: pct(dayTotals.fatG, targets.macros.fatG),
-      kcalPctOfTarget: pct(dayTotals.kcal, targets.calories.dailyTarget),
+      carbsPctOfTarget: alt ? 0 : pct(dayTotals.carbsG, targets.macros.carbsG),
+      fatPctOfTarget: alt ? 0 : pct(dayTotals.fatG, targets.macros.fatG),
+      kcalPctOfTarget: alt ? 0 : pct(dayTotals.kcal, targets.calories.dailyTarget),
     },
     priorityGoals: alt
       ? {
           mode: "alt_protein_micros",
-          note: "Success = protein + amino acids + vitamins + minerals. Ignore carb/fat % as goals.",
+          note: "Success = protein + amino acids + vitamins + minerals from kit, then foods that close shortfalls. No calorie target.",
           proteinHitPct,
           aminoAcidHitPct: aaHitPct,
-          vitaminNote: "NOW multi + greens/eggs/fish cover most vitamin placeholders (D3 high-dose still clinician-only).",
-          mineralNote: "Multi helps; emphasize greens, seeds, yogurt, and broth for Mg/K/Ca food matrix.",
-          carbsFatNote:
-            targets.fatStores && targets.fatStores.excessLb > 0
-              ? `Carbs/fat from food are optional fuel — ~${targets.calories.fromFatStoresKcal ?? 0} kcal/day modeled from body-fat stores above ideal weight.`
-              : "Carbs/fat shown only as fuel to stay near calorie target for weight-loss forecast.",
+          vitaminNote:
+            shortfalls.filter((s) => s.category === "vitamin").length > 0
+              ? `${shortfalls.filter((s) => s.category === "vitamin").length} vitamin shortfall(s) — see options.`
+              : "Vitamins largely covered by NOW multi on this model.",
+          mineralNote:
+            shortfalls.filter((s) => s.category === "mineral").length > 0
+              ? `${shortfalls.filter((s) => s.category === "mineral").length} mineral shortfall(s) — see options.`
+              : "Minerals largely covered by NOW multi on this model (K/Mg often still need food).",
+          carbsFatNote: "Carbs/fat are not Alternative targets. No calorie target.",
         }
       : {
           mode: "cdc_balanced",

@@ -187,7 +187,7 @@ export function buildNutritionKitPlan(
   const sampleDay = altKit
     ? [
         `Protein goal ≈ ${proteinTargetG}g → food ~${proteinFromFoodG}g + whey ~${proteinFromWheyG}g.`,
-        `Food energy ≈ ${targets.calories.dailyTarget} kcal (supporting, not the primary goal on Alternative).`,
+        `Carbs / fat: flexible — no calorie target on Alternative.`,
         `Carbs ≈ ${targets.macros.carbsG}g · Fat ≈ ${targets.macros.fatG}g · Fiber ≈ ${targets.macros.fiberG}g (from meals, not the kit).`,
       ]
     : [
