@@ -21,6 +21,9 @@ export type NutrientTarget = {
 export type DetailedTargets = {
   disclaimer: string;
   method: string;
+  /** Alternative plans prioritize protein + micros; carbs/fat are flexible. */
+  priorityFocus: "cdc_balanced" | "alt_protein_micros";
+  priorityNote: string;
   sleep: {
     hoursMin: number;
     hoursTarget: number;
@@ -47,6 +50,8 @@ export type DetailedTargets = {
     fatPct: number;
     fiberG: number;
     waterLiters: number;
+    /** On alt plans, carbs/fat are incidental fuel — not hard goals. */
+    carbsFatAreFlexible?: boolean;
   };
   aminoAcids: NutrientTarget[];
   vitamins: NutrientTarget[];
@@ -134,23 +139,32 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   // Calorie target
   let dailyTarget = tdee;
   let goalAdjustment = "Maintenance estimate (activity-adjusted TDEE).";
-  if (goal === "weight") {
+  if (!cdc) {
+    // Alternative plans: modest deficit by default so protein-forward days support fat loss
+    // unless explicitly in a strength surplus.
+    if (goal === "strength") {
+      dailyTarget = Math.round(tdee + 150);
+      goalAdjustment =
+        "Alternative plan: slight surplus for training while still prioritizing protein + micronutrients (carbs/fat flexible).";
+    } else {
+      dailyTarget = Math.max(1200, Math.round(tdee - 400));
+      goalAdjustment =
+        "Alternative plan: ~−400 kcal vs TDEE for educational fat-loss pace — hit protein, vitamins, minerals, and amino acids; carbs/fat are flexible fuel, not primary targets.";
+    }
+  } else if (goal === "weight") {
     dailyTarget = Math.max(1200, Math.round(tdee - 400));
-    goalAdjustment = cdc
-      ? "About −400 kcal vs TDEE for a modest educational deficit (CDC-style: produce-forward, not a crash diet)."
-      : "About −400 kcal vs TDEE for a modest educational deficit — keep protein high and refined carbs low (alternative lens).";
+    goalAdjustment =
+      "About −400 kcal vs TDEE for a modest educational deficit (CDC-style: produce-forward, not a crash diet).";
   } else if (goal === "strength") {
     dailyTarget = Math.round(tdee + 200);
     goalAdjustment = "About +200 kcal vs TDEE to support training (educational surplus).";
   } else if (goal === "energy") {
     dailyTarget = tdee;
-    goalAdjustment = cdc
-      ? "Maintenance calories with balanced plates for steadier energy."
-      : "Maintenance calories with protein-forward, lower-refined-carb meals for steadier energy.";
+    goalAdjustment = "Maintenance calories with balanced plates for steadier energy.";
   }
 
-  if (perspective === "metabolic" && goal === "weight") {
-    goalAdjustment += " Alternative metabolic lens: keep protein high if lowering refined carbs.";
+  if (perspective === "metabolic" && !cdc) {
+    goalAdjustment += " Metabolic lens: keep protein high; electrolytes if carbs are low.";
   }
 
   // Optional overweight-plan modifiers from the forecast UI
@@ -180,50 +194,25 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   }
   const weeklyBurnTargetKcal = dailyBurnTargetKcal * 7;
 
-  // Macros — protein first, then fat/carb split of remaining kcal by lens.
-  // CDC-style stays carb-forward; alternative lenses lean lower-carb (educational, not keto Rx).
-  let proteinPerKg = 1.4;
-  if (goal === "strength") proteinPerKg = 1.8;
-  if (goal === "weight") proteinPerKg = 1.8;
-  if (
-    perspective === "metabolic" ||
-    perspective === "functional" ||
-    perspective === "fitness" ||
-    perspective === "alternative"
-  ) {
-    proteinPerKg = Math.max(proteinPerKg, 1.6);
-  }
+  // Macros — protein first.
+  // CDC: balanced plate. Alternative: meet protein (+ AA via protein); carbs/fat are flexible remainder only.
+  let proteinPerKg = cdc ? 1.4 : 1.8;
+  if (goal === "strength") proteinPerKg = Math.max(proteinPerKg, 1.8);
+  if (goal === "weight" && cdc) proteinPerKg = 1.8;
+  if (!cdc) proteinPerKg = Math.max(proteinPerKg, 1.8);
 
   const proteinG = Math.round(proteinPerKg * m.weightKg);
 
-  /** Relative fat:carb shares of calories left after protein (not “fill leftover with carbs”). */
   let fatShareOfRemainder = 0.4;
   let carbShareOfRemainder = 0.6;
 
-  if (perspective === "cdc") {
-    // AMDR-style: more carbs, moderate fat
+  if (cdc) {
     fatShareOfRemainder = goal === "strength" ? 0.3 : 0.35;
     carbShareOfRemainder = 1 - fatShareOfRemainder;
-  } else if (perspective === "metabolic") {
-    // Lower-carb leaning alternative (~15–25% of total kcal carbs for many adults)
-    fatShareOfRemainder = 0.7;
-    carbShareOfRemainder = 0.3;
-  } else if (
-    perspective === "fitness" ||
-    perspective === "alternative" ||
-    perspective === "functional"
-  ) {
-    // Metabolic-fitness / blended alt — lower refined-carb pattern, not CDC plate
-    fatShareOfRemainder = goal === "strength" ? 0.55 : 0.65;
-    carbShareOfRemainder = 1 - fatShareOfRemainder;
-  } else if (perspective === "food_first") {
-    // Whole-food carbs still welcome for fiber, but below CDC
-    fatShareOfRemainder = 0.55;
-    carbShareOfRemainder = 0.45;
   } else {
-    // clean_living and any other alt
-    fatShareOfRemainder = 0.6;
-    carbShareOfRemainder = 0.4;
+    // Alternative: fat carries most remaining energy; carbs stay low — not hard goals
+    fatShareOfRemainder = 0.75;
+    carbShareOfRemainder = 0.25;
   }
 
   const proteinKcal = proteinG * 4;
@@ -378,7 +367,11 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     disclaimer: targetsDisclaimerFor(perspective),
     method: cdc
       ? "CDC-style plan: sleep/activity/fiber/sodium/micronutrients use public-health educational ranges; calories via Mifflin–St Jeor × activity; macros AMDR-leaning (carb-forward)."
-      : "Alternative plan: lower-refined-carb macro split and metabolic/wellness framing — does not use CDC Dietary Guidelines, CDC 150-minute activity targets, or CDC sodium/fiber formulas. Calories via Mifflin–St Jeor × activity; micronutrients are educational food-first placeholders only.",
+      : "Alternative plan: PRIMARY goals are protein (g), essential amino acids, vitamins, and minerals. Carbs and fat are flexible fuel only (not hard targets). Default modest calorie deficit for educational weight-loss pace. Does not use CDC Dietary Guidelines.",
+    priorityFocus: cdc ? "cdc_balanced" : "alt_protein_micros",
+    priorityNote: cdc
+      ? "CDC-style: balanced macros including carbs and fat as intentional plate targets."
+      : "Alternative: aim to hit protein, amino acids, vitamins, and minerals. Carbs/fat fill remaining calories — do not force high-carb targets.",
     sleep: {
       hoursMin,
       hoursTarget,
@@ -407,6 +400,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
       fatPct: fatPctFinal,
       fiberG,
       waterLiters,
+      carbsFatAreFlexible: !cdc,
     },
     aminoAcids,
     vitamins: vitamins.map((v) => ({

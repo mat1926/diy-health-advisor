@@ -248,7 +248,10 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
 
   if (targets) {
     pillars.rest.weeklyTarget = `Sleep ${targets.sleep.hoursTarget}h (band ${targets.sleep.hoursMin}–${targets.sleep.hoursMax}) · wake ±30 min · daily downshift`;
-    pillars.nutrition.weeklyTarget = `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g · carbs ${targets.macros.carbsG}g · fat ${targets.macros.fatG}g · water ~${targets.macros.waterLiters}L`;
+    pillars.nutrition.weeklyTarget =
+      targets.priorityFocus === "alt_protein_micros"
+        ? `${targets.calories.dailyTarget} kcal · PROTEIN ${targets.macros.proteinG}g (primary) · vitamins/minerals/AA · carbs/fat flexible`
+        : `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g · carbs ${targets.macros.carbsG}g · fat ${targets.macros.fatG}g · water ~${targets.macros.waterLiters}L`;
     pillars.exercise.weeklyTarget = `~${targets.exercise.dailyBurnTargetKcal} kcal/day movement burn · ~${targets.exercise.weeklyBurnTargetKcal} kcal/week`;
   }
 

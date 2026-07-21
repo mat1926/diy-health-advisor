@@ -63,15 +63,33 @@ function fillTargets(t, disclaimer) {
   document.getElementById("out-t-cal").textContent = `${t.calories.dailyTarget} kcal`;
   document.getElementById("out-t-cal-detail").textContent =
     `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`;
+  const intro = document.getElementById("out-targets-intro");
+  if (intro && t.priorityNote) {
+    intro.textContent = t.priorityNote;
+  }
   document.getElementById("out-t-ex").textContent = `${t.exercise.dailyBurnTargetKcal} kcal/day`;
   document.getElementById("out-t-ex-detail").textContent =
     `Weekly ~${t.exercise.weeklyBurnTargetKcal} kcal intentional movement`;
 
   const macroBody = [
-    { name: "Protein", amount: t.macros.proteinG, unit: "g", note: `${t.macros.proteinPct}% kcal` },
-    { name: "Carbohydrates", amount: t.macros.carbsG, unit: "g", note: `${t.macros.carbsPct}% kcal` },
-    { name: "Fat", amount: t.macros.fatG, unit: "g", note: `${t.macros.fatPct}% kcal` },
-    { name: "Fiber", amount: t.macros.fiberG, unit: "g", note: "Educational daily fiber target" },
+    { name: "Protein", amount: t.macros.proteinG, unit: "g", note: `${t.macros.proteinPct}% kcal${t.priorityFocus === "alt_protein_micros" ? " · PRIMARY" : ""}` },
+    {
+      name: "Carbohydrates",
+      amount: t.macros.carbsG,
+      unit: "g",
+      note: t.macros.carbsFatAreFlexible
+        ? `${t.macros.carbsPct}% · flexible (not a hard goal)`
+        : `${t.macros.carbsPct}% kcal`,
+    },
+    {
+      name: "Fat",
+      amount: t.macros.fatG,
+      unit: "g",
+      note: t.macros.carbsFatAreFlexible
+        ? `${t.macros.fatPct}% · flexible (not a hard goal)`
+        : `${t.macros.fatPct}% kcal`,
+    },
+    { name: "Fiber", amount: t.macros.fiberG, unit: "g", note: t.macros.carbsFatAreFlexible ? "Supportive, not primary alt goal" : "Educational daily fiber target" },
     { name: "Water", amount: t.macros.waterLiters, unit: "L", note: "Rough fluid target from body weight" },
   ];
   const tbody = document.querySelector("#out-t-macros tbody");
@@ -151,8 +169,13 @@ function fillFoodPlan(fp, disclaimer) {
   wrap.hidden = false;
   document.getElementById("out-food-title").textContent = fp.title || "Detailed food plan";
   document.getElementById("out-food-summary").textContent = fp.summary || "";
-  document.getElementById("out-food-kit").textContent =
-    `Kit base: ${fp.kitBase?.wheyScoops ?? 0} whey scoop(s) (~${fp.kitBase?.wheyProteinG ?? 0}g protein · ~${fp.kitBase?.wheyKcal ?? 0} kcal) · ${fp.kitBase?.multi || "multi"} · ${fp.kitBase?.d3Note || ""}`;
+  if (fp.priorityGoals) {
+    document.getElementById("out-food-kit").textContent =
+      `${fp.priorityGoals.note} Protein hit ~${fp.priorityGoals.proteinHitPct}% · AA ~${fp.priorityGoals.aminoAcidHitPct}%. ${fp.priorityGoals.vitaminNote} ${fp.priorityGoals.mineralNote} ${fp.priorityGoals.carbsFatNote}`;
+  } else {
+    document.getElementById("out-food-kit").textContent =
+      `Kit base: ${fp.kitBase?.wheyScoops ?? 0} whey scoop(s) (~${fp.kitBase?.wheyProteinG ?? 0}g protein · ~${fp.kitBase?.wheyKcal ?? 0} kcal) · ${fp.kitBase?.multi || "multi"} · ${fp.kitBase?.d3Note || ""}`;
+  }
   document.getElementById("out-food-kcal").textContent = `${fp.dayTotals.kcal} kcal`;
   document.getElementById("out-food-kcal-detail").textContent =
     `Target ${fp.targets.kcal} · hit ${fp.macroHit.kcalPctOfTarget}%`;
@@ -226,6 +249,10 @@ function fillProgress(wp, disclaimer) {
     return;
   }
   wrap.hidden = false;
+  const altNote = document.getElementById("out-progress-alt-note");
+  if (altNote) {
+    altNote.hidden = !(wp.pace?.note || "").toLowerCase().includes("alternative");
+  }
   document.getElementById("out-progress-summary").textContent =
     wp.toHealthyBmi?.summary || "";
   document.getElementById("out-progress-now").textContent =

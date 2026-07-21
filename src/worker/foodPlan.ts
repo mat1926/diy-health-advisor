@@ -103,6 +103,16 @@ export type DetailedFoodPlan = {
   aminoAcids: NutrientCoverage[];
   shoppingList: string[];
   prepTips: string[];
+  /** Alternative: primary goals only */
+  priorityGoals?: {
+    mode: "alt_protein_micros" | "cdc_balanced";
+    note: string;
+    proteinHitPct: number;
+    aminoAcidHitPct: number;
+    vitaminNote: string;
+    mineralNote: string;
+    carbsFatNote: string;
+  };
 };
 
 const WHEY_SCOOP_PROTEIN = 25;
@@ -170,42 +180,77 @@ function multiItem(sex: MetricsInput["sex"]): FoodItem {
   };
 }
 
-/** Alternative / lower-refined-carb day template (pre-scale). */
-function altTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock[] {
+/** Alternative: protein + micronutrient dense day (carbs/fat are fuel, not goals). */
+function altProteinMicrosTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock[] {
   const breakfast: FoodItem[] = [
-    { name: "Eggs (scrambled or boiled)", portion: "3 large", kcal: 210, proteinG: 18, carbsG: 2, fatG: 15 },
-    { name: "Spinach sautéed in olive oil", portion: "2 cups cooked", kcal: 90, proteinG: 4, carbsG: 4, fatG: 7 },
-    { name: "Avocado", portion: "½ medium", kcal: 120, proteinG: 1.5, carbsG: 6, fatG: 11 },
+    { name: "Eggs", portion: "4 large", kcal: 280, proteinG: 24, carbsG: 2, fatG: 20 },
+    { name: "Spinach (sautéed)", portion: "2 cups cooked", kcal: 60, proteinG: 5, carbsG: 6, fatG: 1 },
+    { name: "Sardines or smoked salmon (optional add)", portion: "2 oz", kcal: 120, proteinG: 14, carbsG: 0, fatG: 7 },
     multiItem(sex),
   ];
-  if (scoops >= 1) breakfast.push(wheyShake(Math.min(1, scoops)));
+  const breakfastScoopsEarly = Math.min(scoops, 2);
+  if (breakfastScoopsEarly >= 1) breakfast.push(wheyShake(breakfastScoopsEarly));
 
   const lunch: FoodItem[] = [
-    { name: "Grilled chicken thigh or breast", portion: "6 oz cooked", kcal: 280, proteinG: 42, carbsG: 0, fatG: 12 },
-    { name: "Mixed leafy salad", portion: "Large bowl", kcal: 40, proteinG: 3, carbsG: 6, fatG: 0 },
-    { name: "Olive oil + vinegar", portion: "1.5 tbsp oil", kcal: 180, proteinG: 0, carbsG: 1, fatG: 20 },
-    { name: "Cucumber + cherry tomatoes", portion: "1 cup", kcal: 30, proteinG: 1, carbsG: 6, fatG: 0 },
+    { name: "Chicken breast or turkey", portion: "8 oz cooked", kcal: 370, proteinG: 70, carbsG: 0, fatG: 8 },
+    { name: "Mixed leafy greens + herbs", portion: "Large bowl (3+ cups)", kcal: 40, proteinG: 3, carbsG: 6, fatG: 0 },
+    { name: "Olive oil dressing", portion: "1 tbsp", kcal: 120, proteinG: 0, carbsG: 0, fatG: 14 },
+    { name: "Broccoli or asparagus", portion: "2 cups", kcal: 60, proteinG: 5, carbsG: 11, fatG: 0.5 },
   ];
 
   const dinner: FoodItem[] = [
-    { name: "Salmon (baked)", portion: "6 oz", kcal: 350, proteinG: 34, carbsG: 0, fatG: 22 },
-    { name: "Broccoli", portion: "2 cups", kcal: 60, proteinG: 5, carbsG: 12, fatG: 0.5 },
-    { name: "Butter or olive oil on veg", portion: "1 tbsp", kcal: 100, proteinG: 0, carbsG: 0, fatG: 11 },
-    { name: "Berries", portion: "¾ cup", kcal: 50, proteinG: 0.5, carbsG: 12, fatG: 0.5 },
+    { name: "Salmon, beef, or liver rotation", portion: "6 oz cooked", kcal: 340, proteinG: 36, carbsG: 0, fatG: 20 },
+    { name: "Brussels sprouts or kale", portion: "2 cups", kcal: 70, proteinG: 5, carbsG: 12, fatG: 1 },
+    { name: "Bone broth or mineral water", portion: "1 cup broth", kcal: 40, proteinG: 6, carbsG: 0, fatG: 1 },
   ];
 
   const snacks: FoodItem[] = [
-    { name: "Greek yogurt (plain, full-fat)", portion: "¾ cup", kcal: 150, proteinG: 15, carbsG: 6, fatG: 8 },
-    { name: "Almonds", portion: "1 oz (about 23)", kcal: 160, proteinG: 6, carbsG: 6, fatG: 14 },
+    { name: "Greek yogurt (plain, full-fat or 2%)", portion: "1 cup", kcal: 180, proteinG: 20, carbsG: 8, fatG: 8 },
+    { name: "Pumpkin seeds", portion: "1 oz", kcal: 150, proteinG: 8, carbsG: 4, fatG: 13 },
   ];
-  if (scoops >= 2) snacks.unshift(wheyShake(scoops - 1));
+  const snackScoops = Math.max(0, scoops - Math.min(scoops, 2));
+  if (snackScoops > 0) snacks.unshift(wheyShake(snackScoops));
 
   return [
-    { name: "Breakfast", timeHint: "Within 1–2 h of waking", items: breakfast, totals: sumItems(breakfast) },
-    { name: "Lunch", timeHint: "Midday", items: lunch, totals: sumItems(lunch) },
-    { name: "Dinner", timeHint: "Earlier evening when possible", items: dinner, totals: sumItems(dinner) },
-    { name: "Snacks / shake", timeHint: "Afternoon or post-walk", items: snacks, totals: sumItems(snacks) },
+    { name: "Breakfast", timeHint: "Protein + multi + greens", items: breakfast, totals: sumItems(breakfast) },
+    { name: "Lunch", timeHint: "Largest protein block", items: lunch, totals: sumItems(lunch) },
+    { name: "Dinner", timeHint: "Protein + minerals (greens)", items: dinner, totals: sumItems(dinner) },
+    { name: "Snacks / shake", timeHint: "Close protein / AA gap", items: snacks, totals: sumItems(snacks) },
   ];
+}
+
+/** Scale alternative meals primarily to hit protein; keep near calorie cap for fat-loss forecast. */
+function scaleAltForProtein(
+  meals: MealBlock[],
+  proteinTarget: number,
+  calorieCap: number,
+): MealBlock[] {
+  const currentP = meals.reduce((s, m) => s + m.totals.proteinG, 0) || 1;
+  let factor = proteinTarget / currentP;
+  factor = Math.max(0.7, Math.min(1.5, factor));
+
+  let scaled = meals.map((meal) => {
+    const items = meal.items.map((i) => {
+      if (i.kit && i.kcal === 0) return i; // multi
+      if (i.kit) return i; // keep whey scoops as planned
+      return scaleItem(i, factor);
+    });
+    return { ...meal, items, totals: sumItems(items) };
+  });
+
+  let kcal = scaled.reduce((s, m) => s + m.totals.kcal, 0);
+  if (kcal > calorieCap * 1.08) {
+    const trim = calorieCap / kcal;
+    scaled = scaled.map((meal) => {
+      const items = meal.items.map((i) => {
+        if (i.kit) return i;
+        // Trim fat-forward foods slightly more via uniform scale
+        return scaleItem(i, Math.max(0.65, trim));
+      });
+      return { ...meal, items, totals: sumItems(items) };
+    });
+  }
+  return scaled;
 }
 
 /** CDC-style higher-carb day template (pre-scale). */
@@ -280,17 +325,23 @@ export function buildDetailedFoodPlan(
   const perspective = resolvePerspective(m.perspective);
   const alt = perspective !== "cdc";
   const proteinTarget = targets.macros.proteinG;
-  const foodProtein = Math.round(proteinTarget * 0.6);
+  // Alternative: more whey to secure protein/AA; CDC keeps ~60% food protein assumption
+  const foodProteinShare = alt ? 0.5 : 0.6;
+  const foodProtein = Math.round(proteinTarget * foodProteinShare);
   const gap = Math.max(0, proteinTarget - foodProtein);
-  const wheyScoops = Math.min(3, Math.max(0, Math.ceil(gap / WHEY_SCOOP_PROTEIN)));
+  const wheyScoops = Math.min(3, Math.max(alt ? 1 : 0, Math.ceil(gap / WHEY_SCOOP_PROTEIN)));
   const wheyProteinG = wheyScoops * WHEY_SCOOP_PROTEIN;
 
   const sex = m.sex ?? "prefer_not";
   const multiName = sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name;
   const multiUrl = sex === "female" ? KIT_PRODUCTS.eve.url : KIT_PRODUCTS.adam.url;
 
-  let meals = alt ? altTemplate(wheyScoops, sex) : cdcTemplate(wheyScoops, sex);
-  meals = scaleMeals(meals, targets.calories.dailyTarget);
+  let meals = alt
+    ? altProteinMicrosTemplate(wheyScoops, sex)
+    : cdcTemplate(wheyScoops, sex);
+  meals = alt
+    ? scaleAltForProtein(meals, proteinTarget, targets.calories.dailyTarget)
+    : scaleMeals(meals, targets.calories.dailyTarget);
 
   const dayTotals = meals.reduce(
     (a, meal) => ({
@@ -419,13 +470,30 @@ export function buildDetailedFoodPlan(
     ),
   ];
 
-  const kitGapSummary = [
-    "NOW ADAM/EVE and NOW D3 do not provide meaningful calories, protein, carbs, fat, or fiber.",
-    `Whey (~${wheyScoops} scoop(s)) mainly covers protein (~${wheyProteinG}g) and a little energy (~${wheyKcal} kcal) — not a full macro plan.`,
-    `Still needed from food ≈ ${Math.max(0, targets.macros.proteinG - wheyProteinG)}g protein · ${Math.max(0, targets.macros.carbsG - wheyCarbsG)}g carbs · ${Math.max(0, targets.macros.fatG - wheyFatG)}g fat · ${targets.macros.fiberG}g fiber · ~${Math.max(0, targets.calories.dailyTarget - wheyKcal)} kcal.`,
-    "Potassium, sodium, and most food-matrix nutrients still come from meals even when a multi is used.",
-    "High-dose D3 10,000 IU is not a daily macro or default vitamin D protocol from this app.",
-  ];
+  const kitGapSummary = alt
+    ? [
+        "Alternative priority: hit protein, amino acids, vitamins, and minerals — not carb/fat quotas.",
+        "NOW ADAM/EVE cover many vitamins/minerals; whey covers a large share of protein/EAAs.",
+        `Still need food for remaining protein (~${Math.max(0, proteinTarget - wheyProteinG)}g), potassium-rich plants, and any gaps the multi doesn’t fully fill.`,
+        "Carbs and fat on this plan are flexible fuel only — use them to stay near the calorie target for fat-loss pace.",
+        "NOW D3 10,000 IU stays clinician-gated — not part of the default daily menu.",
+      ]
+    : [
+        "NOW ADAM/EVE and NOW D3 do not provide meaningful calories, protein, carbs, fat, or fiber.",
+        `Whey (~${wheyScoops} scoop(s)) mainly covers protein (~${wheyProteinG}g) and a little energy (~${wheyKcal} kcal) — not a full macro plan.`,
+        `Still needed from food ≈ ${Math.max(0, targets.macros.proteinG - wheyProteinG)}g protein · ${Math.max(0, targets.macros.carbsG - wheyCarbsG)}g carbs · ${Math.max(0, targets.macros.fatG - wheyFatG)}g fat · ${targets.macros.fiberG}g fiber · ~${Math.max(0, targets.calories.dailyTarget - wheyKcal)} kcal.`,
+        "Potassium, sodium, and most food-matrix nutrients still come from meals even when a multi is used.",
+        "High-dose D3 10,000 IU is not a daily macro or default vitamin D protocol from this app.",
+      ];
+
+  if (alt) {
+    // Reframe carb/fat gap rows as non-primary
+    for (const row of kitMacroGaps) {
+      if (row.nutrient === "Carbohydrates" || row.nutrient === "Fat" || row.nutrient === "Fiber") {
+        row.verdict = `${row.nutrient} is NOT a primary Alternative target — flexible. Focus on protein + micros instead.`;
+      }
+    }
+  }
 
   const itemized: ItemizedFoodLine[] = [];
   let lineNo = 1;
@@ -446,35 +514,59 @@ export function buildDetailedFoodPlan(
     }
   }
 
-  const shoppingList = [
-    KIT_PRODUCTS.whey.name,
-    sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
-    KIT_PRODUCTS.shaker.name,
-    "Eggs",
-    alt ? "Chicken thighs or breast" : "Chicken or turkey breast",
-    alt ? "Salmon" : "White fish or chicken",
-    "Leafy greens / broccoli",
-    alt ? "Avocado, olive oil, almonds" : "Oats, brown rice or quinoa, fruit",
-    "Plain Greek yogurt",
-    "Berries or other fruit",
-  ];
+  const shoppingList = alt
+    ? [
+        KIT_PRODUCTS.whey.name,
+        sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
+        KIT_PRODUCTS.shaker.name,
+        "Eggs (dozen)",
+        "Chicken breast or turkey (2–3 lb)",
+        "Salmon or sardines",
+        "Leafy greens + broccoli/kale/Brussels",
+        "Greek yogurt (plain)",
+        "Pumpkin seeds",
+        "Olive oil + optional bone broth",
+      ]
+    : [
+        KIT_PRODUCTS.whey.name,
+        sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
+        KIT_PRODUCTS.shaker.name,
+        "Eggs",
+        "Chicken or turkey breast",
+        "White fish or chicken",
+        "Leafy greens / broccoli",
+        "Oats, brown rice or quinoa, fruit",
+        "Plain Greek yogurt",
+        "Berries or other fruit",
+      ];
 
-  const prepTips = [
-    "Batch-cook protein (chicken/fish) twice a week; portion into lunch boxes.",
-    `Mix whey in the Strada (${KIT_PRODUCTS.shaker.name}) — confirm scoop size on your bag.`,
-    "Take ADAM or EVE with breakfast — do not combine both.",
-    "NOW D3 10,000 IU: leave out of the daily menu unless a clinician cleared it.",
-    alt
-      ? "Keep refined carbs low; use berries and non-starchy vegetables as your main carbs."
-      : "Keep added sugars low; lean on fruit, whole grains, and vegetables for carbs.",
-  ];
+  const prepTips = alt
+    ? [
+        "Primary checklist: (1) hit protein grams (2) take ADAM/EVE with food (3) eat leafy greens twice (4) whey closes AA/protein gaps.",
+        "Do not chase carb or fat grams — use them only to land near your calorie target for fat-loss forecast.",
+        `Mix whey in the Strada — about ${wheyScoops} scoop(s)/day toward ~${proteinTarget}g protein.`,
+        "Rotate salmon / beef / liver weekly for micronutrient density (if you eat them).",
+        "NOW D3 10,000 IU: skip unless clinician-cleared.",
+      ]
+    : [
+        "Batch-cook protein (chicken/fish) twice a week; portion into lunch boxes.",
+        `Mix whey in the Strada (${KIT_PRODUCTS.shaker.name}) — confirm scoop size on your bag.`,
+        "Take ADAM or EVE with breakfast — do not combine both.",
+        "NOW D3 10,000 IU: leave out of the daily menu unless a clinician cleared it.",
+        "Keep added sugars low; lean on fruit, whole grains, and vegetables for carbs.",
+      ];
+
+  const proteinHitPct = pct(dayTotals.proteinG, proteinTarget);
+  const aaHitPct = Math.min(120, proteinHitPct); // EAAs track protein quality on this template
 
   return {
     disclaimer: FOOD_PLAN_DISCLAIMER,
     title: alt
-      ? "Detailed itemized food plan (alternative · kit-based)"
+      ? "Alternative itemized plan (protein · vitamins · minerals · amino acids)"
       : "Detailed itemized food plan (CDC-style · kit-based)",
-    summary: `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s) and ${sex === "female" ? "EVE" : "ADAM"}. See kit macro gaps — carbs, fat, fiber, and most calories are not covered by whey/NOW alone.`,
+    summary: alt
+      ? `Protein-first Alternative day (~${targets.calories.dailyTarget} kcal deficit band) built to hit ~${proteinTarget}g protein + multi-supported vitamins/minerals/EAAs. Carbs/fat are flexible — not success metrics.`
+      : `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s) and ${sex === "female" ? "EVE" : "ADAM"}.`,
     style: alt ? "alternative" : "cdc",
     kitBase: {
       wheyScoops,
@@ -500,11 +592,30 @@ export function buildDetailedFoodPlan(
       fiberG: targets.macros.fiberG,
     },
     macroHit: {
-      proteinPctOfTarget: pct(dayTotals.proteinG, targets.macros.proteinG),
+      proteinPctOfTarget: proteinHitPct,
       carbsPctOfTarget: pct(dayTotals.carbsG, targets.macros.carbsG),
       fatPctOfTarget: pct(dayTotals.fatG, targets.macros.fatG),
       kcalPctOfTarget: pct(dayTotals.kcal, targets.calories.dailyTarget),
     },
+    priorityGoals: alt
+      ? {
+          mode: "alt_protein_micros",
+          note: "Success = protein + amino acids + vitamins + minerals. Ignore carb/fat % as goals.",
+          proteinHitPct,
+          aminoAcidHitPct: aaHitPct,
+          vitaminNote: "NOW multi + greens/eggs/fish cover most vitamin placeholders (D3 high-dose still clinician-only).",
+          mineralNote: "Multi helps; emphasize greens, seeds, yogurt, and broth for Mg/K/Ca food matrix.",
+          carbsFatNote: "Carbs/fat shown only as fuel to stay near calorie target for weight-loss forecast.",
+        }
+      : {
+          mode: "cdc_balanced",
+          note: "CDC-style: carbs and fat remain intentional plate targets.",
+          proteinHitPct,
+          aminoAcidHitPct: aaHitPct,
+          vitaminNote: "Multi + produce-forward meals.",
+          mineralNote: "Multi + food.",
+          carbsFatNote: "Carbs and fat are planned targets on CDC-style.",
+        },
     vitamins,
     minerals,
     aminoAcids,

@@ -19,7 +19,7 @@ export type WeightProgressForecast = {
   current: {
     weightLb: number;
     bmi: number;
-    category: "overweight" | "obesity";
+    category: "overweight" | "obesity" | "within_range";
   };
   plan: {
     dailyCalories: number;
@@ -59,10 +59,9 @@ export function isOverweightForForecast(m: MetricsInput): boolean {
 }
 
 /**
- * Educational weight-change forecast when BMI ≥ 25.
- * Deficit = (TDEE − intake) + intentional exercise burn beyond what’s already
- * baked into a sedentary baseline — we use TDEE − dailyTarget as the diet gap,
- * plus optional exerciseBonusKcal the user elects to add.
+ * Educational weight-change forecast.
+ * - CDC: when BMI ≥ 25
+ * - Alternative (protein/micros): whenever the plan runs a calorie deficit (default)
  */
 export function buildWeightProgressForecast(
   m: MetricsInput,
@@ -70,19 +69,21 @@ export function buildWeightProgressForecast(
 ): WeightProgressForecast | null {
   if (!targets || !m.heightCm || !m.weightKg) return null;
   const currentBmi = bmi(m.heightCm, m.weightKg);
-  if (currentBmi < OVERWEIGHT_BMI) return null;
+  const altProteinMicros = targets.priorityFocus === "alt_protein_micros";
+  const dietGap = Math.max(0, targets.calories.tdee - targets.calories.dailyTarget);
+
+  if (!altProteinMicros && currentBmi < OVERWEIGHT_BMI) return null;
+  if (altProteinMicros && dietGap <= 0 && currentBmi < OVERWEIGHT_BMI) return null;
 
   const weightLb = kgToLb(m.weightKg);
   const calorieAdjust = m.calorieAdjust ?? 0;
   const exerciseBonusKcal = m.exerciseBonusKcal ?? 0;
-
-  const dietGap = Math.max(0, targets.calories.tdee - targets.calories.dailyTarget);
-  // Count a fraction of planned exercise burn as additional deficit only when
-  // the user adds an explicit bonus on top of the baseline plan.
   const dailyDeficitKcal = Math.max(0, dietGap + exerciseBonusKcal);
   let weeklyLossLb = Math.round(((dailyDeficitKcal * 7) / 3500) * 10) / 10;
 
-  let note = "Educational pace from calorie gap ÷ 3,500 kcal per lb.";
+  let note = altProteinMicros
+    ? "Alternative plan forecast: deficit from protein-forward calorie target (carbs/fat flexible)."
+    : "Educational pace from calorie gap ÷ 3,500 kcal per lb.";
   if (weeklyLossLb > 2) {
     weeklyLossLb = 2;
     note =
@@ -106,29 +107,37 @@ export function buildWeightProgressForecast(
   const milestones: ProgressMilestone[] = [];
   for (const weeks of [4, 8, 12]) {
     const lost = Math.round(weeklyLossLb * weeks * 10) / 10;
-    const nextLb = Math.max(targetWeightLb, Math.round((weightLb - lost) * 10) / 10);
-    const nextKg = lbToKg(nextLb);
+    const nextLb = Math.round((weightLb - lost) * 10) / 10;
+    const nextKg = lbToKg(Math.max(nextLb, targetWeightLb * 0.95));
+    const displayLb = Math.round((nextKg / 0.45359237) * 10) / 10;
     milestones.push({
       weeks,
-      weightLb: nextLb,
+      weightLb: displayLb,
       bmi: Math.round((nextKg / (heightM * heightM)) * 10) / 10,
-      lostLb: Math.round((weightLb - nextLb) * 10) / 10,
+      lostLb: Math.round((weightLb - displayLb) * 10) / 10,
     });
   }
 
   const estimatedWeeks =
-    weeklyLossLb > 0 ? Math.ceil(poundsToGo / weeklyLossLb) : null;
+    weeklyLossLb > 0 && poundsToGo > 0 ? Math.ceil(poundsToGo / weeklyLossLb) : null;
 
   let summary: string;
-  if (!estimatedWeeks || weeklyLossLb <= 0) {
-    summary =
-      "With the current calorie/exercise settings there isn’t a clear loss trajectory to BMI &lt; 25 on this simple model.";
+  if (dailyDeficitKcal <= 0) {
+    summary = "This calorie setting isn’t in a deficit — no fat-loss trajectory on the simple model.";
+  } else if (currentBmi < OVERWEIGHT_BMI) {
+    summary = `On this Alternative deficit (~${dailyDeficitKcal} kcal/day), illustrative loss is ~${weeklyLossLb} lb/week. BMI is already under 25 — only pursue if a clinician agrees.`;
+  } else if (!estimatedWeeks) {
+    summary = `Illustrative pace ~${weeklyLossLb} lb/week on this plan’s calorie gap.`;
   } else if (estimatedWeeks > 104) {
-    summary = `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) would take well over 2 years on this simple model — consider a larger sustainable deficit or more daily walking.`;
+    summary = `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) would take well over 2 years on this simple model.`;
   } else {
-    summary = `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks on this simple model — illustrative only.`;
+    summary = altProteinMicros
+      ? `At ~${weeklyLossLb} lb/week on this Alternative protein-forward deficit, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`
+      : `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`;
   }
-  summary = summary.replace(/&lt;/g, "<");
+
+  const category: WeightProgressForecast["current"]["category"] =
+    currentBmi >= 30 ? "obesity" : currentBmi >= OVERWEIGHT_BMI ? "overweight" : "within_range";
 
   return {
     disclaimer: PROGRESS_DISCLAIMER,
@@ -136,7 +145,7 @@ export function buildWeightProgressForecast(
     current: {
       weightLb,
       bmi: currentBmi,
-      category: currentBmi >= 30 ? "obesity" : "overweight",
+      category,
     },
     plan: {
       dailyCalories: targets.calories.dailyTarget,
@@ -159,7 +168,8 @@ export function buildWeightProgressForecast(
       estimatedWeeks,
       summary,
     },
-    modifiersHint:
-      "Use the controls below to cut more calories or add exercise burn, then update the forecast and food plan.",
+    modifiersHint: altProteinMicros
+      ? "Alternative plan already uses a ~400 kcal deficit. Adjust calories or exercise below to update the forecast and food plan."
+      : "Use the controls below to cut more calories or add exercise burn, then update the forecast and food plan.",
   };
 }
