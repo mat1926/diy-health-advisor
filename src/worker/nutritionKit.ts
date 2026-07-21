@@ -1,7 +1,23 @@
 import type { MetricsInput } from "./plans";
 import type { DetailedTargets } from "./targets";
 
-export const NUTRITION_KIT_DISCLAIMER = `This Nutrition Kit plan maps educational VitalGauge targets to specific retail products for DIY convenience. It is not medical advice, a prescription, or an FDA-evaluated protocol. Multivitamins and vitamin D do not replace food or lab-guided care. Home pH strips, BP cuffs, and smart scales are for self-tracking only — not diagnoses. Do not take high-dose vitamin D without clinician guidance. Choose ADAM or EVE by sex — do not combine unless a clinician directs. Product labels override any summary here.`;
+export const NUTRITION_KIT_DISCLAIMER = `This Nutrition Kit plan maps educational VitalGauge targets to specific retail products for DIY convenience. It is not medical advice, a prescription, or an FDA-evaluated protocol. Multivitamins and vitamin D do not replace food or lab-guided care. Home pH strips, BP cuffs, and smart scales are for self-tracking only — not diagnoses. Stop vitamin D and seek care if overload symptoms appear. Choose ADAM or EVE by sex — do not combine unless a clinician directs. Product labels override any summary here.`;
+
+/** Educational safety notice for kit Vitamin D3 (NIH ODS–aligned symptom themes). */
+export const VITAMIN_D_OVERLOAD_SYMPTOMS = [
+  "Nausea or vomiting",
+  "Loss of appetite",
+  "Constipation or abdominal pain",
+  "Muscle weakness or unusual fatigue",
+  "Confusion, irritability, or trouble thinking clearly",
+  "Excessive thirst",
+  "Frequent or large-volume urination",
+  "Dehydration",
+  "Bone or body pain",
+  "In severe cases: kidney problems, irregular heartbeat — seek emergency care",
+] as const;
+
+export const VITAMIN_D_OVERLOAD_NOTICE = `Stop the Vitamin D3 supplement immediately and contact a clinician (or emergency care if severe) if you notice signs of vitamin D overload / excess, which are usually linked to high blood calcium. Common warning symptoms: ${VITAMIN_D_OVERLOAD_SYMPTOMS.slice(0, -1).join("; ")}. ${VITAMIN_D_OVERLOAD_SYMPTOMS[VITAMIN_D_OVERLOAD_SYMPTOMS.length - 1]}. Do not restart high-dose D3 without clinician guidance and labs. You cannot get vitamin D overload from normal sun exposure alone.`;
 
 export type KitProduct = {
   asin: string;
@@ -27,7 +43,7 @@ export const KIT_PRODUCTS = {
     asin: "B00F45EQ4W",
     name: "NOW Vitamin D3 10,000 IU softgels",
     url: "https://www.amazon.com/dp/B00F45EQ4W",
-    role: "Optional high-potency vitamin D — clinician/labs only",
+    role: "Vitamin D supplement toward educational D target (watch for overload symptoms)",
   },
   adam: {
     asin: "B0013OVWWM",
@@ -69,6 +85,8 @@ export type NutritionKitPlan = {
   disclaimer: string;
   title: string;
   summary: string;
+  vitaminDOverloadNotice: string;
+  vitaminDOverloadSymptoms: string[];
   daily: {
     caloriesTarget: number;
     proteinTargetG: number;
@@ -143,11 +161,13 @@ export function buildNutritionKitPlan(
     });
   }
 
+  const dTarget =
+    targets.vitamins.find((v) => v.name.startsWith("Vitamin D"))?.amount ?? 1000;
+
   products.push({
     ...KIT_PRODUCTS.d3,
-    howToUse: `App educational vitamin D target is often ~${targets.vitamins.find((v) => v.name.startsWith("Vitamin D"))?.amount ?? 600} IU/day — far below 10,000 IU.`,
-    caution:
-      "Do not start NOW D3 10,000 IU as a casual daily dose from this app. Use only with clinician guidance and labs, or choose a lower-dose D3.",
+    howToUse: `Included in this plan as the kit Vitamin D supplement (NOW D3 10,000 IU). Educational app D target is often ~${dTarget} IU/day — this softgel is much stronger, so prefer clinician/lab guidance on frequency (e.g. not casually stacking with other D sources). Take with a meal that has some fat.`,
+    caution: VITAMIN_D_OVERLOAD_NOTICE,
   });
 
   products.push({
@@ -171,29 +191,34 @@ export function buildNutritionKitPlan(
     caution: "Smart-scale body-fat estimates vary — treat weight as the primary input for VitalGauge.",
   });
 
+  const altKit = targets.priorityFocus === "alt_protein_micros";
+
   const schedule = [
     "Morning: weigh on RENPHO scale → breakfast + multivitamin (ADAM or EVE) with food.",
+    "Vitamin D3 (kit): take with a meal that includes some fat — follow clinician guidance on how often for this 10,000 IU potency.",
     "Optional: saliva pH strip mid-morning → log in VitalGauge.",
     wheyScoops > 0
       ? `Protein: ${wheyScoops} whey shake(s) in the Strada — place mid-morning and/or post-activity.`
       : "Protein: prioritize food first; keep whey optional.",
     `Fluids: work toward ~${waterLiters} L/day using the Strada among other drinks.`,
     "1–2×/week: RENPHO BP seated (+ standing if checking orthostatic) and resting pulse → log vitals.",
-    "Vitamin D3 10,000 IU: skip unless a clinician cleared this exact potency.",
-    "Evening: finish remaining food protein/carbs/fat toward calorie & macro targets from the app.",
+    "If vitamin D overload symptoms appear: stop D3 immediately and contact a clinician.",
+    altKit
+      ? "Evening: finish protein/micros priorities (no calorie target on Alternative)."
+      : "Evening: finish remaining food protein/carbs/fat toward calorie & macro targets from the app.",
   ];
 
-  const altKit = targets.priorityFocus === "alt_protein_micros";
   const sampleDay = altKit
     ? [
         `Protein goal ≈ ${proteinTargetG}g → food ~${proteinFromFoodG}g + whey ~${proteinFromWheyG}g.`,
         `Carbs / fat: flexible — no calorie target on Alternative.`,
-        `Carbs ≈ ${targets.macros.carbsG}g · Fat ≈ ${targets.macros.fatG}g · Fiber ≈ ${targets.macros.fiberG}g (from meals, not the kit).`,
+        `Vitamin D: kit NOW D3 included — discontinue if overload symptoms appear.`,
       ]
     : [
         `Calories target ≈ ${targets.calories.dailyTarget} kcal (educational).`,
         `Protein ≈ ${proteinTargetG}g → food ~${proteinFromFoodG}g + whey ~${proteinFromWheyG}g.`,
         `Carbs ≈ ${targets.macros.carbsG}g · Fat ≈ ${targets.macros.fatG}g · Fiber ≈ ${targets.macros.fiberG}g (from meals, not the kit).`,
+        `Vitamin D: kit NOW D3 included — discontinue if overload symptoms appear.`,
       ];
   sampleDay.push(
     useEve
@@ -211,14 +236,16 @@ export function buildNutritionKitPlan(
   const gaps = [
     "Urine Multistix 10 SG is still a separate add-on for the full urine pad panel (not covered by basic pH strips).",
     "Carbs, fat, sodium, and potassium still come mostly from food.",
-    "High-dose D3 is not aligned with typical DIY educational IU targets.",
+    "Kit D3 10,000 IU exceeds typical educational IU targets — labs/clinician timing preferred; stop if overload symptoms occur.",
     "Supplements and home devices are not a substitute for clinical care or bloodwork.",
   ];
 
   return {
     disclaimer: NUTRITION_KIT_DISCLAIMER,
     title: "Nutrition Kit plan (whey · multi · D3 · pH · RENPHO BP · scale)",
-    summary: `Use the Amazon kit for ~${proteinTargetG}g protein support, multi coverage, and DIY vitals (pH strips, RENPHO BP, RENPHO scale) while following VitalGauge targets. D3 10,000 IU stays clinician-gated.`,
+    summary: `Use the Amazon kit for ~${proteinTargetG}g protein, multi coverage, Vitamin D3, and DIY vitals (pH strips, RENPHO BP, RENPHO scale). Stop D3 if overload symptoms appear.`,
+    vitaminDOverloadNotice: VITAMIN_D_OVERLOAD_NOTICE,
+    vitaminDOverloadSymptoms: [...VITAMIN_D_OVERLOAD_SYMPTOMS],
     daily: {
       caloriesTarget: targets.calories.dailyTarget,
       proteinTargetG,

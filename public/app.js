@@ -168,6 +168,18 @@ function fillNutritionKit(kit, disclaimer) {
   fillList(document.getElementById("out-kit-schedule"), kit.schedule || []);
   fillList(document.getElementById("out-kit-sample"), kit.sampleDay || []);
   fillList(document.getElementById("out-kit-gaps"), kit.gaps || []);
+
+  const d3Wrap = document.getElementById("out-kit-d3-wrap");
+  const d3Notice = document.getElementById("out-kit-d3-notice");
+  const d3Symptoms = document.getElementById("out-kit-d3-symptoms");
+  if (d3Wrap && d3Notice && d3Symptoms) {
+    d3Wrap.hidden = false;
+    d3Notice.textContent =
+      kit.vitaminDOverloadNotice ||
+      "Stop Vitamin D3 and seek care if overload symptoms appear.";
+    fillList(d3Symptoms, kit.vitaminDOverloadSymptoms || []);
+  }
+
   document.getElementById("out-kit-disclaimer").textContent =
     kit.disclaimer || disclaimer || "";
 }
@@ -335,6 +347,19 @@ function fillFoodPlan(fp, disclaimer) {
   fillCoverageTable("out-food-aa", fp.aminoAcids);
   fillList(document.getElementById("out-food-shop"), fp.shoppingList || []);
   fillList(document.getElementById("out-food-tips"), fp.prepTips || []);
+
+  const foodD3Wrap = document.getElementById("out-food-d3-wrap");
+  const foodD3Notice = document.getElementById("out-food-d3-notice");
+  const foodD3Symptoms = document.getElementById("out-food-d3-symptoms");
+  if (foodD3Wrap && foodD3Notice && foodD3Symptoms) {
+    foodD3Wrap.hidden = false;
+    foodD3Notice.textContent =
+      fp.vitaminDOverloadNotice ||
+      fp.kitBase?.d3Note ||
+      "Stop Vitamin D3 and seek care if overload symptoms appear.";
+    fillList(foodD3Symptoms, fp.vitaminDOverloadSymptoms || []);
+  }
+
   document.getElementById("out-food-disclaimer").textContent =
     fp.disclaimer || disclaimer || "";
 }

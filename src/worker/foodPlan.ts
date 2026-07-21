@@ -1,9 +1,9 @@
 import type { MetricsInput } from "./plans";
 import { resolvePerspective } from "./perspectives";
 import type { DetailedTargets } from "./targets";
-import { KIT_PRODUCTS } from "./nutritionKit";
+import { KIT_PRODUCTS, VITAMIN_D_OVERLOAD_NOTICE, VITAMIN_D_OVERLOAD_SYMPTOMS } from "./nutritionKit";
 
-export const FOOD_PLAN_DISCLAIMER = `This detailed food plan is an educational template to illustrate how whey, a NOW multivitamin, and ordinary foods can approach VitalGauge macro and micronutrient targets. Portions are approximate. Brand labels override app summaries. It is not a medical diet, allergy-safe menu, or prescription. Skip or swap foods for allergies, religion, budget, or clinician advice. High-dose vitamin D3 from the kit stays clinician-gated.`;
+export const FOOD_PLAN_DISCLAIMER = `This detailed food plan is an educational template to illustrate how whey, a NOW multivitamin, Vitamin D3, and ordinary foods can approach VitalGauge macro and micronutrient targets. Portions are approximate. Brand labels override app summaries. It is not a medical diet, allergy-safe menu, or prescription. Skip or swap foods for allergies, religion, budget, or clinician advice. Stop Vitamin D3 if overload symptoms appear.`;
 
 export type FoodItem = {
   name: string;
@@ -116,6 +116,8 @@ export type DetailedFoodPlan = {
   aminoAcids: NutrientCoverage[];
   shoppingList: string[];
   prepTips: string[];
+  vitaminDOverloadNotice?: string;
+  vitaminDOverloadSymptoms?: string[];
   /** Alternative: primary goals only */
   priorityGoals?: {
     mode: "alt_protein_micros" | "cdc_balanced";
@@ -193,9 +195,22 @@ function multiItem(sex: MetricsInput["sex"]): FoodItem {
   };
 }
 
-/** Alternative: kit-only day (whey + multi). Food is suggested only to close shortfalls. */
+function d3Softgel(): FoodItem {
+  return {
+    name: "NOW Vitamin D3 10,000 IU (kit)",
+    portion: "1 softgel with a meal that has some fat (confirm frequency with clinician/labs)",
+    kcal: 0,
+    proteinG: 0,
+    carbsG: 0,
+    fatG: 0,
+    kit: true,
+    notes: `${KIT_PRODUCTS.d3.url} · ${VITAMIN_D_OVERLOAD_NOTICE}`,
+  };
+}
+
+/** Alternative: kit-only day (whey + multi + D3). Food is suggested only to close shortfalls. */
 function altKitOnlyTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock[] {
-  const morning: FoodItem[] = [multiItem(sex)];
+  const morning: FoodItem[] = [multiItem(sex), d3Softgel()];
   const shakeScoops = Math.min(scoops, 2);
   if (shakeScoops >= 1) morning.push(wheyShake(shakeScoops));
 
@@ -218,7 +233,7 @@ function altKitOnlyTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock
   return [
     {
       name: "Kit — morning",
-      timeHint: "Multi + whey",
+      timeHint: "Multi + Vitamin D3 + whey",
       items: morning,
       totals: sumItems(morning),
     },
@@ -254,9 +269,9 @@ const SHORTFALL_SUGGESTIONS: Record<string, string[]> = {
   "Vitamin A (food-first)": ["Eggs", "Liver (occasional)", "Leafy greens", "Salmon"],
   "Vitamin C": ["Bell peppers", "Broccoli", "Berries", "Citrus if tolerated"],
   "Vitamin D": [
-    "Fatty fish (salmon/sardines)",
-    "Sun exposure as appropriate",
-    "Clinician-guided D3 — do not self-dose kit 10,000 IU",
+    "Kit NOW D3 already covers educational D target when used as directed",
+    "Fatty fish (salmon/sardines) as food support",
+    "Stop D3 and seek care if overload symptoms appear",
   ],
   "Vitamin E": ["Almonds", "Sunflower seeds", "Avocado", "Olive oil"],
   "Vitamin K": ["Kale", "Spinach", "Broccoli", "Brussels sprouts"],
@@ -329,6 +344,7 @@ function cdcTemplate(scoops: number, sex: MetricsInput["sex"]): MealBlock[] {
     { name: "Berries", portion: "1 cup", kcal: 70, proteinG: 1, carbsG: 17, fatG: 0.5 },
     { name: "Eggs", portion: "2 large", kcal: 140, proteinG: 12, carbsG: 1, fatG: 10 },
     multiItem(sex),
+    d3Softgel(),
   ];
   if (scoops >= 1) breakfast.push(wheyShake(Math.min(1, scoops)));
 
@@ -463,9 +479,8 @@ export function buildDetailedFoodPlan(
     let fromMulti: string;
     if (alt) {
       if (isD) {
-        // Multi may include modest D; kit 10k IU stays clinician-gated and is not counted
-        fromPlan = v.amount * 0.5;
-        fromMulti = "Multi may include modest D — kit 10k IU not counted / clinician-only";
+        fromPlan = v.amount;
+        fromMulti = "Kit NOW D3 10,000 IU included in plan — stop if overload symptoms";
       } else if (isCholine) {
         fromPlan = v.amount * 0.15;
         fromMulti = "Multi usually low in choline — food needed";
@@ -479,9 +494,9 @@ export function buildDetailedFoodPlan(
     } else {
       const isC = v.name.startsWith("Vitamin C");
       const isB12 = v.name.includes("B12");
-      fromPlan = isD ? v.amount * 0.15 : isC ? v.amount * 0.7 : isB12 ? v.amount * 0.5 : v.amount * 0.55;
+      fromPlan = isD ? v.amount : isC ? v.amount * 0.7 : isB12 ? v.amount * 0.5 : v.amount * 0.55;
       fromMulti = isD
-        ? "kit D3 clinician-only — do not self-dose 10k IU"
+        ? "Kit NOW D3 included — stop if overload symptoms; confirm frequency with clinician"
         : "NOW ADAM/EVE typically covers much of daily need";
     }
     const row = coverage(v.name, v.amount, v.unit, fromPlan, fromMulti, v.note);
@@ -626,17 +641,17 @@ export function buildDetailedFoodPlan(
         shortfalls.length > 0
           ? `${shortfalls.length} nutrient(s) still below target after kit — see shortfalls with food options.`
           : "Kit appears to cover listed primary targets on this educational model (verify labels).",
+        "NOW D3 10,000 IU is included for vitamin D — discontinue immediately if overload symptoms appear.",
         targets.fatStores && targets.fatStores.excessLb > 0
           ? targets.fatStores.reservesLine
           : "Little excess above ideal BMI modeled as fat stores.",
-        "NOW D3 10,000 IU stays clinician-gated — not counted toward vitamin D coverage.",
       ]
     : [
         "NOW ADAM/EVE and NOW D3 do not provide meaningful calories, protein, carbs, fat, or fiber.",
         `Whey (~${wheyScoops} scoop(s)) mainly covers protein (~${wheyProteinG}g) and a little energy (~${wheyKcal} kcal) — not a full macro plan.`,
         `Still needed from food ≈ ${Math.max(0, targets.macros.proteinG - wheyProteinG)}g protein · ${Math.max(0, targets.macros.carbsG - wheyCarbsG)}g carbs · ${Math.max(0, targets.macros.fatG - wheyFatG)}g fat · ${targets.macros.fiberG}g fiber · ~${Math.max(0, targets.calories.dailyTarget - wheyKcal)} kcal.`,
         "Potassium, sodium, and most food-matrix nutrients still come from meals even when a multi is used.",
-        "High-dose D3 10,000 IU is not a daily macro or default vitamin D protocol from this app.",
+        "Vitamin D3 (kit) is included — stop and seek care if overload symptoms appear.",
       ];
 
   const itemized: ItemizedFoodLine[] = [];
@@ -666,6 +681,7 @@ export function buildDetailedFoodPlan(
     ? [
         KIT_PRODUCTS.whey.name,
         sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
+        KIT_PRODUCTS.d3.name,
         KIT_PRODUCTS.shaker.name,
         KIT_PRODUCTS.phStrips.name,
         KIT_PRODUCTS.renphoBp.name,
@@ -677,6 +693,7 @@ export function buildDetailedFoodPlan(
     : [
         KIT_PRODUCTS.whey.name,
         sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
+        KIT_PRODUCTS.d3.name,
         KIT_PRODUCTS.shaker.name,
         "Eggs",
         "Chicken or turkey breast",
@@ -689,19 +706,20 @@ export function buildDetailedFoodPlan(
 
   const prepTips = alt
     ? [
-        "Use kit only as the base: whey scoops + ADAM/EVE with food (or a small snack if fasting is not a goal).",
+        "Use kit only as the base: whey scoops + ADAM/EVE + Vitamin D3 with a meal that has some fat.",
         `Mix ~${wheyScoops} whey scoop(s)/day in the Strada toward ~${proteinTarget}g protein.`,
         shortfalls.length
           ? `Close the ${shortfalls.length} shortfall(s) with the suggested foods — do not chase carbs/fat grams.`
           : "No major shortfalls on this educational kit model — still eat real food for satiety and fiber.",
         "Carbs and fat are flexible on Alternative — there is no calorie target in this plan view.",
-        "NOW D3 10,000 IU: skip unless clinician-cleared.",
+        "Vitamin D3: stop immediately if overload symptoms appear (nausea, thirst, frequent urination, confusion, weakness, etc.) and contact a clinician.",
       ]
     : [
         "Batch-cook protein (chicken/fish) twice a week; portion into lunch boxes.",
         `Mix whey in the Strada (${KIT_PRODUCTS.shaker.name}) — confirm scoop size on your bag.`,
         "Take ADAM or EVE with breakfast — do not combine both.",
-        "NOW D3 10,000 IU: leave out of the daily menu unless a clinician cleared it.",
+        "Take kit Vitamin D3 with a meal that has some fat; confirm frequency with a clinician for 10,000 IU softgels.",
+        "Stop Vitamin D3 if overload symptoms appear and seek care.",
         "Keep added sugars low; lean on fruit, whole grains, and vegetables for carbs.",
       ];
 
@@ -710,13 +728,13 @@ export function buildDetailedFoodPlan(
 
   return {
     disclaimer: alt
-      ? `Alternative kit-only plan: educational coverage from whey + NOW multi. Shortfalls list foods that can close gaps. Not a medical diet. Labels override app estimates. High-dose D3 stays clinician-gated.`
-      : FOOD_PLAN_DISCLAIMER,
+      ? `Alternative kit-only plan: educational coverage from whey + NOW multi + Vitamin D3. Shortfalls list foods that can close gaps. Not a medical diet. Labels override app estimates. ${VITAMIN_D_OVERLOAD_NOTICE}`
+      : `${FOOD_PLAN_DISCLAIMER} ${VITAMIN_D_OVERLOAD_NOTICE}`,
     title: alt
-      ? "Alternative kit plan (whey · multi) + shortfalls to close"
+      ? "Alternative kit plan (whey · multi · D3) + shortfalls to close"
       : "Detailed itemized food plan (CDC-style · kit-based)",
     summary: alt
-      ? `Kit-only base: ~${wheyScoops} whey scoop(s) (~${wheyProteinG}g protein) + ${sex === "female" ? "EVE" : "ADAM"}. ${
+      ? `Kit-only base: ~${wheyScoops} whey scoop(s) (~${wheyProteinG}g protein) + ${sex === "female" ? "EVE" : "ADAM"} + Vitamin D3. ${
           shortfalls.length
             ? `${shortfalls.length} nutrient(s) still below target — see options below.`
             : "Modeled primary targets covered by kit (verify labels)."
@@ -724,8 +742,8 @@ export function buildDetailedFoodPlan(
           targets.fatStores?.excessLb
             ? ` ${targets.fatStores.reservesLine}`
             : ""
-        } No calorie target on Alternative.`
-      : `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s) and ${sex === "female" ? "EVE" : "ADAM"}.`,
+        } No calorie target on Alternative. Stop D3 if overload symptoms appear.`
+      : `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s), ${sex === "female" ? "EVE" : "ADAM"}, and Vitamin D3.`,
     style: alt ? "alternative" : "cdc",
     kitBase: {
       wheyScoops,
@@ -735,7 +753,7 @@ export function buildDetailedFoodPlan(
       wheyFatG,
       multi: multiName,
       multiUrl,
-      d3Note: "NOW D3 10,000 IU is listed in the kit but not placed on the daily menu without clinician clearance.",
+      d3Note: `NOW D3 10,000 IU is included in the plan with a meal that has fat. ${VITAMIN_D_OVERLOAD_NOTICE}`,
       shakerNote: `Use ${KIT_PRODUCTS.shaker.name} for whey and fluid blocks.`,
     },
     kitMacroGaps,
@@ -760,13 +778,13 @@ export function buildDetailedFoodPlan(
     priorityGoals: alt
       ? {
           mode: "alt_protein_micros",
-          note: "Success = protein + amino acids + vitamins + minerals from kit, then foods that close shortfalls. No calorie target.",
+          note: "Success = protein + amino acids + vitamins + minerals from kit (incl. D3), then foods that close shortfalls. No calorie target.",
           proteinHitPct,
           aminoAcidHitPct: aaHitPct,
           vitaminNote:
             shortfalls.filter((s) => s.category === "vitamin").length > 0
               ? `${shortfalls.filter((s) => s.category === "vitamin").length} vitamin shortfall(s) — see options.`
-              : "Vitamins largely covered by NOW multi on this model.",
+              : "Vitamins largely covered by NOW multi + D3 on this model.",
           mineralNote:
             shortfalls.filter((s) => s.category === "mineral").length > 0
               ? `${shortfalls.filter((s) => s.category === "mineral").length} mineral shortfall(s) — see options.`
@@ -775,10 +793,10 @@ export function buildDetailedFoodPlan(
         }
       : {
           mode: "cdc_balanced",
-          note: "CDC-style: carbs and fat remain intentional plate targets.",
+          note: "CDC-style: carbs and fat remain intentional plate targets. Vitamin D3 from kit is included.",
           proteinHitPct,
           aminoAcidHitPct: aaHitPct,
-          vitaminNote: "Multi + produce-forward meals.",
+          vitaminNote: "Multi + Vitamin D3 + produce-forward meals.",
           mineralNote: "Multi + food.",
           carbsFatNote: "Carbs and fat are planned targets on CDC-style.",
         },
@@ -787,5 +805,7 @@ export function buildDetailedFoodPlan(
     aminoAcids,
     shoppingList,
     prepTips,
+    vitaminDOverloadNotice: VITAMIN_D_OVERLOAD_NOTICE,
+    vitaminDOverloadSymptoms: [...VITAMIN_D_OVERLOAD_SYMPTOMS],
   };
 }

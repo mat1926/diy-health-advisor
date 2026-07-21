@@ -197,7 +197,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const summaryParts = [
     `7-day DIY plan ready (Rest · Nutrition · Exercise)`,
     nutritionKit
-      ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · D3 clinician-gated · pH + RENPHO BP/scale`
+      ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · Vitamin D3 · pH + RENPHO BP/scale`
       : null,
     foodPlan ? "detailed food plan included" : null,
     weightProgress
@@ -266,6 +266,12 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     pillars.nutrition.items = uniquePush(
       pillars.nutrition.items,
       `Nutrition Kit: about ${nutritionKit.daily.wheyScoops} whey scoop(s)/day in the Strada to help reach ~${nutritionKit.daily.proteinTargetG}g protein.`,
+    );
+  }
+  if (nutritionKit) {
+    pillars.nutrition.items = uniquePush(
+      pillars.nutrition.items,
+      "Vitamin D3 (kit) is part of the plan — stop immediately and contact a clinician if overload symptoms appear (nausea, vomiting, thirst, frequent urination, confusion, muscle weakness, etc.).",
     );
   }
 
