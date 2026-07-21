@@ -144,13 +144,17 @@ async function boot() {
       "heightFt",
       "heightIn",
       "weightLb",
-      "sleepHours",
-      "stressLevel",
       "restingHeartRate",
-      "stepsPerDay",
-      "waterLiters",
+      "bpSystolic",
+      "bpDiastolic",
+      "standingBpSystolic",
+      "standingBpDiastolic",
       "salivaPh",
       "urinePh",
+      "sleepHours",
+      "stressLevel",
+      "stepsPerDay",
+      "waterLiters",
     ]) {
       if (payload[key] === "" || payload[key] == null) delete payload[key];
       else if (payload[key] != null) payload[key] = Number(payload[key]);

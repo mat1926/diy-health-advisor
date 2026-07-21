@@ -131,9 +131,15 @@ function buildRest(
       break;
   }
 
-  if (plan === "plus" && typeof m.restingHeartRate === "number" && m.restingHeartRate > 100) {
+  if (typeof m.restingHeartRate === "number" && m.restingHeartRate > 100) {
     items.push(
       `Resting heart rate logged at ${m.restingHeartRate} — ease intensity and discuss persistent elevation with a clinician.`,
+    );
+  }
+
+  if (typeof m.bpSystolic === "number" && typeof m.bpDiastolic === "number") {
+    items.push(
+      `Seated BP logged ${m.bpSystolic}/${m.bpDiastolic} — home readings are for tracking trends; confirm concerning patterns with a clinician.`,
     );
   }
 
@@ -255,14 +261,15 @@ function buildNutrition(
       break;
   }
 
+  if (m.salivaPh != null || m.urinePh != null) {
+    items.push(
+      "DIY pH strips are for self-tracking context only — use food/hydration notes, not self-diagnosis.",
+    );
+  }
+
   if (plan === "plus") {
     if (typeof m.waterLiters === "number" && m.waterLiters < 1.5) {
       items.push(`Water logged ~${m.waterLiters} L/day — nudge fluids up gradually with each meal.`);
-    }
-    if (m.salivaPh != null || m.urinePh != null) {
-      items.push(
-        "DIY pH strips are for self-tracking context only — use food/hydration notes, not self-diagnosis.",
-      );
     }
   }
 

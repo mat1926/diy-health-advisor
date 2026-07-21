@@ -12,17 +12,21 @@ export const FREE_FIELDS = [
   "activityLevel",
   "primaryGoal",
   "perspective",
+  "restingHeartRate",
+  "bpSystolic",
+  "bpDiastolic",
+  "standingBpSystolic",
+  "standingBpDiastolic",
+  "salivaPh",
+  "urinePh",
 ] as const;
 
 export const PLUS_FIELDS = [
   ...FREE_FIELDS,
   "sleepHours",
   "stressLevel",
-  "restingHeartRate",
   "stepsPerDay",
   "waterLiters",
-  "salivaPh",
-  "urinePh",
   "notes",
 ] as const;
 
@@ -38,8 +42,9 @@ export const PLAN_LIMITS = {
     fields: FREE_FIELDS,
     features: [
       "Basic metrics (age, height ft/in, weight lbs, activity, goal)",
-      "Choose CDC-style habits or an alternative-doctors lens",
-      "Short DIY wellness summary",
+      "Vitals: resting HR, blood pressure, BP upon standing",
+      "DIY saliva & urine pH",
+      "CDC-style or alternative-doctors plan styles",
       "3 advice runs per day",
       "Always-visible medical disclaimer",
     ],
@@ -52,8 +57,7 @@ export const PLAN_LIMITS = {
     fields: PLUS_FIELDS,
     features: [
       "Everything in Free",
-      "Sleep, stress, heart rate, steps, hydration, notes",
-      "DIY saliva & urine pH (stress-pattern style self-tracking)",
+      "Sleep, stress, steps, hydration, notes",
       "Deeper, structured action plan",
       "50 advice runs per day",
       "Stripe Customer Portal (cancel anytime)",
@@ -72,6 +76,10 @@ export type MetricsInput = {
   sleepHours?: number;
   stressLevel?: number;
   restingHeartRate?: number;
+  bpSystolic?: number;
+  bpDiastolic?: number;
+  standingBpSystolic?: number;
+  standingBpDiastolic?: number;
   stepsPerDay?: number;
   waterLiters?: number;
   salivaPh?: number;
@@ -148,6 +156,10 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
   num("sleepHours", 0, 24);
   num("stressLevel", 1, 10);
   num("restingHeartRate", 30, 220);
+  num("bpSystolic", 70, 250);
+  num("bpDiastolic", 40, 150);
+  num("standingBpSystolic", 70, 250);
+  num("standingBpDiastolic", 40, 150);
   num("stepsPerDay", 0, 100_000);
   num("waterLiters", 0, 20);
   num("salivaPh", 4.5, 8.5);

@@ -49,6 +49,41 @@ function phWatchouts(m: MetricsInput, watchouts: string[]) {
   }
 }
 
+function vitalsWatchouts(m: MetricsInput, watchouts: string[]) {
+  if (typeof m.restingHeartRate === "number" && m.restingHeartRate > 100) {
+    watchouts.push(
+      "Elevated resting heart rate can have many causes; discuss persistent elevation with a clinician.",
+    );
+  }
+  if (typeof m.bpSystolic === "number" && m.bpSystolic >= 180) {
+    watchouts.push(
+      "Very high home systolic readings need prompt clinical attention — especially with chest pain, weakness, or vision changes.",
+    );
+  } else if (typeof m.bpSystolic === "number" && m.bpSystolic >= 140) {
+    watchouts.push(
+      "Home systolic readings in a higher range should be confirmed and discussed with a clinician; this app does not diagnose hypertension.",
+    );
+  }
+  if (
+    typeof m.bpSystolic === "number" &&
+    typeof m.standingBpSystolic === "number" &&
+    m.bpSystolic - m.standingBpSystolic >= 20
+  ) {
+    watchouts.push(
+      "A sizable drop in systolic BP from seated to standing on home checks can matter if you feel dizzy or faint — sit/lie down and seek care if symptoms are severe; ask a clinician about orthostatic evaluation.",
+    );
+  }
+  if (
+    typeof m.bpDiastolic === "number" &&
+    typeof m.standingBpDiastolic === "number" &&
+    m.bpDiastolic - m.standingBpDiastolic >= 10
+  ) {
+    watchouts.push(
+      "A drop in diastolic BP upon standing on home checks is worth mentioning to a clinician if you have lightheadedness.",
+    );
+  }
+}
+
 function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const bodyMass = m.heightCm && m.weightKg ? bmi(m.heightCm, m.weightKg) : null;
   const goal = m.primaryGoal ?? "general";
@@ -78,15 +113,12 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     watchouts.push(CDC_NOTE);
   }
 
+  phWatchouts(m, watchouts);
+  vitalsWatchouts(m, watchouts);
+
   if (plan === "plus") {
-    phWatchouts(m, watchouts);
     if (typeof m.sleepHours === "number" && m.sleepHours < 6) {
       watchouts.push("Chronic short sleep can worsen mood, appetite regulation, and recovery.");
-    }
-    if (typeof m.restingHeartRate === "number" && m.restingHeartRate > 100) {
-      watchouts.push(
-        "Elevated resting heart rate can have many causes; discuss persistent elevation with a clinician.",
-      );
     }
     if (m.notes) {
       watchouts.push(
