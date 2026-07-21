@@ -75,7 +75,41 @@ export const KIT_PRODUCTS = {
     url: "https://www.amazon.com/dp/B01N1UX8RW",
     role: "Track weight (and optional body metrics) for demographics & progress",
   },
+  potassiumBicarb: {
+    asin: "B07B8W4LFX",
+    name: "Earthborn Elements potassium bicarbonate (2.5 lb)",
+    url: "https://www.amazon.com/dp/B07B8W4LFX",
+    role: "Close potassium shortfall (follow label; electrolyte caution)",
+  },
+  traceMinerals: {
+    asin: "B000AMUWLK",
+    name: "Trace Minerals drops (8 fl oz, 70+ minerals)",
+    url: "https://www.amazon.com/dp/B000AMUWLK",
+    role: "Support magnesium, potassium, and trace-mineral shortfalls",
+  },
+  magGlycinate: {
+    asin: "B07NWMVMT1",
+    name: "NOW Magnesium Glycinate 100 mg (180 tablets)",
+    url: "https://www.amazon.com/dp/B07NWMVMT1",
+    role: "Close magnesium shortfall with a gentle glycinate form",
+  },
 } as const satisfies Record<string, KitProduct>;
+
+/** Staple foods used with the kit to close Alternative shortfalls (not a full menu). */
+export const SHORTFALL_STAPLES = {
+  eggs: {
+    name: "Organic regenerative eggs",
+    portion: "3 large",
+    proteinG: 18,
+    role: "Protein, choline, B12, selenium, and amino acids",
+  },
+  greekYogurt: {
+    name: "Organic Greek yogurt (plain)",
+    portion: "1 cup",
+    proteinG: 20,
+    role: "Protein, calcium, potassium support, and amino acids",
+  },
+} as const;
 
 /** Label claim varies by lot — educational default scoop size. */
 const WHEY_PROTEIN_G_PER_SCOOP = 25;
@@ -109,10 +143,16 @@ export function buildNutritionKitPlan(
   if (!targets) return null;
 
   const proteinTargetG = targets.macros.proteinG;
-  // Assume ~60% of protein from ordinary food; whey closes the rest (educational)
-  const proteinFromFoodG = Math.round(proteinTargetG * 0.6);
+  const altKit = targets.priorityFocus === "alt_protein_micros";
+  // Alternative: eggs + yogurt staples + increased whey; CDC: ~60% food + whey gap
+  const stapleProteinG = altKit
+    ? SHORTFALL_STAPLES.eggs.proteinG + SHORTFALL_STAPLES.greekYogurt.proteinG
+    : Math.round(proteinTargetG * 0.6);
+  const proteinFromFoodG = stapleProteinG;
   const gap = Math.max(0, proteinTargetG - proteinFromFoodG);
-  const wheyScoops = Math.min(3, Math.max(0, Math.ceil(gap / WHEY_PROTEIN_G_PER_SCOOP)));
+  const wheyScoops = altKit
+    ? Math.min(5, Math.max(2, Math.ceil(gap / WHEY_PROTEIN_G_PER_SCOOP)))
+    : Math.min(3, Math.max(0, Math.ceil(gap / WHEY_PROTEIN_G_PER_SCOOP)));
   const proteinFromWheyG = wheyScoops * WHEY_PROTEIN_G_PER_SCOOP;
   const waterLiters = targets.macros.waterLiters;
   const shakerFills = Math.max(1, Math.ceil((waterLiters * 33.814) / SHAKE_FLUID_OZ));
@@ -125,8 +165,9 @@ export function buildNutritionKitPlan(
   const products: NutritionKitPlan["products"] = [
     {
       ...KIT_PRODUCTS.whey,
-      howToUse:
-        wheyScoops === 0
+      howToUse: altKit
+        ? `Increased whey: about ${wheyScoops} scoop(s)/day (~${proteinFromWheyG}g) plus organic regenerative eggs (${SHORTFALL_STAPLES.eggs.portion}) and organic Greek yogurt (${SHORTFALL_STAPLES.greekYogurt.portion}) to close protein/AA shortfalls toward ~${proteinTargetG}g.`
+        : wheyScoops === 0
           ? `Food may already cover ~${proteinTargetG}g protein — keep whey optional for busy days.`
           : `Mix about ${wheyScoops} scoop(s)/day (~${proteinFromWheyG}g protein) in the Strada to help reach ~${proteinTargetG}g total. Confirm scoop grams on your bag label.`,
     },
@@ -191,11 +232,47 @@ export function buildNutritionKitPlan(
     caution: "Smart-scale body-fat estimates vary — treat weight as the primary input for VitalGauge.",
   });
 
-  const altKit = targets.priorityFocus === "alt_protein_micros";
+  if (altKit) {
+    products.push({
+      asin: "food-eggs",
+      name: SHORTFALL_STAPLES.eggs.name,
+      url: "https://www.amazon.com/s?k=organic+regenerative+eggs",
+      role: SHORTFALL_STAPLES.eggs.role,
+      howToUse: `${SHORTFALL_STAPLES.eggs.portion}/day — choline, complete protein, B12/selenium support.`,
+    });
+    products.push({
+      asin: "food-yogurt",
+      name: SHORTFALL_STAPLES.greekYogurt.name,
+      url: "https://www.amazon.com/s?k=organic+greek+yogurt+plain",
+      role: SHORTFALL_STAPLES.greekYogurt.role,
+      howToUse: `${SHORTFALL_STAPLES.greekYogurt.portion}/day — protein + calcium/potassium support.`,
+    });
+    products.push({
+      ...KIT_PRODUCTS.potassiumBicarb,
+      howToUse:
+        "Use only as labeled toward remaining potassium need after food. Mix carefully; do not megadose. People with kidney disease or on potassium-sparing meds need clinician clearance.",
+      caution: "Potassium supplements can raise blood potassium too high — stop if weakness, irregular heartbeat, or numbness; seek care.",
+    });
+    products.push({
+      ...KIT_PRODUCTS.traceMinerals,
+      howToUse: "Add drops to water as labeled for magnesium/potassium/trace mineral support alongside the multi.",
+      caution: "Follow dropper serving size; mineral concentrates taste salty — dilute well.",
+    });
+    products.push({
+      ...KIT_PRODUCTS.magGlycinate,
+      howToUse: "Typically 1–2 tablets (100–200 mg elemental Mg as labeled) to close magnesium shortfall after multi + food.",
+      caution: "Excess magnesium may loosen stools — reduce dose if that happens.",
+    });
+  }
 
   const schedule = [
     "Morning: weigh on RENPHO scale → breakfast + multivitamin (ADAM or EVE) with food.",
     "Vitamin D3 (kit): take with a meal that includes some fat — follow clinician guidance on how often for this 10,000 IU potency.",
+    ...(altKit
+      ? [
+          `Shortfall stack: ${SHORTFALL_STAPLES.eggs.portion} regenerative eggs · ${SHORTFALL_STAPLES.greekYogurt.portion} organic Greek yogurt · Mg glycinate · K bicarbonate · trace minerals.`,
+        ]
+      : []),
     "Optional: saliva pH strip mid-morning → log in VitalGauge.",
     wheyScoops > 0
       ? `Protein: ${wheyScoops} whey shake(s) in the Strada — place mid-morning and/or post-activity.`
@@ -210,7 +287,8 @@ export function buildNutritionKitPlan(
 
   const sampleDay = altKit
     ? [
-        `Protein goal ≈ ${proteinTargetG}g → food ~${proteinFromFoodG}g + whey ~${proteinFromWheyG}g.`,
+        `Protein goal ≈ ${proteinTargetG}g → eggs+yogurt ~${proteinFromFoodG}g + increased whey ~${proteinFromWheyG}g.`,
+        `Mineral stack: Mg glycinate + potassium bicarbonate + trace mineral drops (as labeled).`,
         `Carbs / fat: flexible — no calorie target on Alternative.`,
         `Vitamin D: kit NOW D3 included — discontinue if overload symptoms appear.`,
       ]

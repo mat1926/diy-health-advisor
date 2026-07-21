@@ -243,6 +243,19 @@ function fillFoodPlan(fp, disclaimer) {
 
   fillList(document.getElementById("out-food-kit-gaps"), fp.kitGapSummary || []);
 
+  const evalWrap = document.getElementById("out-food-stack-eval-wrap");
+  if (evalWrap) {
+    if (altFood && (fp.shortfallStackEvaluation || []).length) {
+      evalWrap.hidden = false;
+      fillList(
+        document.getElementById("out-food-stack-eval"),
+        fp.shortfallStackEvaluation || [],
+      );
+    } else {
+      evalWrap.hidden = true;
+    }
+  }
+
   const shortWrap = document.getElementById("out-food-shortfalls-wrap");
   const shortBody = document.querySelector("#out-food-shortfalls tbody");
   if (shortWrap && shortBody) {
@@ -328,17 +341,17 @@ function fillFoodPlan(fp, disclaimer) {
   const itemizedTitle = document.getElementById("out-food-itemized-title");
   if (itemizedTitle) {
     itemizedTitle.textContent = altFood
-      ? "Kit-only day (no grocery foods listed)"
+      ? "Shortfall stack (kit + eggs/yogurt + minerals)"
       : "Itemized day plan (every food)";
   }
   const mealsTitle = document.getElementById("out-food-meals-title");
   if (mealsTitle) {
-    mealsTitle.textContent = altFood ? "Kit blocks" : "Meals (grouped)";
+    mealsTitle.textContent = altFood ? "Stack blocks" : "Meals (grouped)";
   }
   const shopTitle = document.getElementById("out-food-shop-title");
   if (shopTitle) {
     shopTitle.textContent = altFood
-      ? "Kit + foods to close shortfalls"
+      ? "Shortfall stack shopping list"
       : "Shopping list";
   }
 
