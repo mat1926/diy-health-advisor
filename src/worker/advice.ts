@@ -15,15 +15,19 @@ import {
   pillarsToActions,
   type PillarsPlan,
 } from "./pillars";
+import { buildDetailedTargets, TARGETS_DISCLAIMER, type DetailedTargets } from "./targets";
 
 export type AdviceResult = {
   disclaimer: string;
   lensDisclaimer: string;
   lifeExpectancyDisclaimer: string;
+  targetsDisclaimer: string;
   perspective: { id: PerspectiveId; label: string; themes: string[] };
   lifeExpectancy: LifeExpectancyEstimate | null;
   /** Detailed 7-day DIY plan shown after demographics are submitted */
   pillars: PillarsPlan;
+  /** Numeric sleep / calorie / exercise / nutrition targets */
+  targets: DetailedTargets | null;
   summary: string;
   actions: string[];
   watchouts: string[];
@@ -50,10 +54,14 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const perspectiveId = resolvePerspective(m.perspective);
   const perspective = PERSPECTIVES[perspectiveId];
   const pillars = buildPillars(plan, m);
+  const targets = buildDetailedTargets(m);
   const lifeExpectancy = estimateLifeExpectancy(m);
 
   const summaryParts = [
     `7-day DIY plan ready (Rest · Nutrition · Exercise)`,
+    targets
+      ? `targets: sleep ${targets.sleep.hoursTarget}h · ${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
+      : null,
     `${perspective.shortName} lens`,
     `age ${m.age ?? "n/a"}, activity ${m.activityLevel ?? "n/a"}, goal ${goal}`,
     bodyMass ? `BMI ≈ ${bodyMass}` : null,
@@ -90,10 +98,17 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     );
   }
 
+  if (targets) {
+    pillars.rest.weeklyTarget = `Sleep ${targets.sleep.hoursTarget}h (band ${targets.sleep.hoursMin}–${targets.sleep.hoursMax}) · wake ±30 min · daily downshift`;
+    pillars.nutrition.weeklyTarget = `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g · carbs ${targets.macros.carbsG}g · fat ${targets.macros.fatG}g · water ~${targets.macros.waterLiters}L`;
+    pillars.exercise.weeklyTarget = `~${targets.exercise.dailyBurnTargetKcal} kcal/day movement burn · ~${targets.exercise.weeklyBurnTargetKcal} kcal/week`;
+  }
+
   return {
     disclaimer: MEDICAL_DISCLAIMER,
     lensDisclaimer: LENS_DISCLAIMER,
     lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
+    targetsDisclaimer: TARGETS_DISCLAIMER,
     perspective: {
       id: perspective.id,
       label: perspective.label,
@@ -101,6 +116,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     },
     lifeExpectancy,
     pillars,
+    targets,
     summary: summaryParts.join(" — ") + ".",
     actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
     watchouts: [...new Set(watchouts)].slice(0, 8),
@@ -140,7 +156,7 @@ The user just completed demographics/metrics. Return a 7-day educational plan un
 Frame suggestions using themes often discussed in alternative/functional wellness education (${p.label}): ${p.themes.join("; ")}.
 Never claim affiliation with Dr. Berg, Dr. Ekberg, Dr. Axe, Dr. Jockers, Dr. Clark, or Jane Oelke / Natural Choices.
 If sleep < 6 or stress >= 8, prioritize Rest and keep Exercise easy; block aggressive fasting.
-Do not invent life-expectancy numbers.
+Do not invent life-expectancy numbers or numeric nutrient targets; the app computes those separately.
 Return concise JSON with keys:
 - summary (string)
 - pillars: { rest: {focus, weeklyTarget, items[]}, nutrition: {focus, weeklyTarget, items[]}, exercise: {focus, weeklyTarget, items[]} }
@@ -205,9 +221,11 @@ export async function generateAdvice(
       disclaimer: MEDICAL_DISCLAIMER,
       lensDisclaimer: LENS_DISCLAIMER,
       lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
+      targetsDisclaimer: TARGETS_DISCLAIMER,
       perspective: fallback.perspective,
       lifeExpectancy: fallback.lifeExpectancy,
       pillars,
+      targets: fallback.targets,
       summary: typeof parsed.summary === "string" ? parsed.summary : fallback.summary,
       actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
       watchouts: Array.isArray(parsed.watchouts)

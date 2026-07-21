@@ -32,6 +32,65 @@ function fillPillar(prefix, block) {
   fillList(document.getElementById(`out-${prefix}-items`), block.items || []);
 }
 
+function fillNutrientTable(tableId, rows) {
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  for (const row of rows || []) {
+    const tr = document.createElement("tr");
+    const a = document.createElement("td");
+    a.textContent = row.name || row[0] || "";
+    const b = document.createElement("td");
+    b.textContent = row.amount != null ? `${row.amount} ${row.unit || ""}`.trim() : row[1] || "";
+    const c = document.createElement("td");
+    c.textContent = row.note || row[2] || "";
+    c.className = "muted";
+    tr.append(a, b, c);
+    tbody.appendChild(tr);
+  }
+}
+
+function fillTargets(t, disclaimer) {
+  const wrap = document.getElementById("out-targets-wrap");
+  if (!t) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  document.getElementById("out-t-sleep").textContent = `${t.sleep.hoursTarget} hrs`;
+  document.getElementById("out-t-sleep-detail").textContent =
+    `Band ${t.sleep.hoursMin}–${t.sleep.hoursMax} hrs / night`;
+  document.getElementById("out-t-cal").textContent = `${t.calories.dailyTarget} kcal`;
+  document.getElementById("out-t-cal-detail").textContent =
+    `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`;
+  document.getElementById("out-t-ex").textContent = `${t.exercise.dailyBurnTargetKcal} kcal/day`;
+  document.getElementById("out-t-ex-detail").textContent =
+    `Weekly ~${t.exercise.weeklyBurnTargetKcal} kcal intentional movement`;
+
+  const macroBody = [
+    { name: "Protein", amount: t.macros.proteinG, unit: "g", note: `${t.macros.proteinPct}% kcal` },
+    { name: "Carbohydrates", amount: t.macros.carbsG, unit: "g", note: `${t.macros.carbsPct}% kcal` },
+    { name: "Fat", amount: t.macros.fatG, unit: "g", note: `${t.macros.fatPct}% kcal` },
+    { name: "Fiber", amount: t.macros.fiberG, unit: "g", note: "Educational daily fiber target" },
+    { name: "Water", amount: t.macros.waterLiters, unit: "L", note: "Rough fluid target from body weight" },
+  ];
+  // macros table uses note as third col — remap header says % kcal for col3 which works
+  const tbody = document.querySelector("#out-t-macros tbody");
+  tbody.innerHTML = "";
+  for (const row of macroBody) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${row.name}</td><td>${row.amount} ${row.unit}</td><td class="muted">${row.note}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  fillNutrientTable("out-t-aa", t.aminoAcids);
+  fillNutrientTable("out-t-vit", t.vitamins);
+  fillNutrientTable("out-t-min", t.minerals);
+  fillList(document.getElementById("out-t-ex-examples"), t.exercise.examples || []);
+  document.getElementById("out-targets-disclaimer").textContent =
+    t.disclaimer || disclaimer || "";
+}
+
 async function boot() {
   const form = document.getElementById("metrics-form");
   const badge = document.getElementById("plan-badge");
@@ -125,6 +184,8 @@ async function boot() {
       } else {
         pillarsEl.hidden = true;
       }
+
+      fillTargets(data.targets, data.targetsDisclaimer);
 
       const themesWrap = document.getElementById("out-themes-wrap");
       if (data.perspective?.themes?.length) {
