@@ -154,37 +154,57 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   }
   const weeklyBurnTargetKcal = dailyBurnTargetKcal * 7;
 
-  // Macros
+  // Macros — protein first, then fat/carb split of remaining kcal by lens.
+  // CDC-style stays carb-forward; alternative lenses lean lower-carb (educational, not keto Rx).
   let proteinPerKg = 1.4;
   if (goal === "strength") proteinPerKg = 1.8;
   if (goal === "weight") proteinPerKg = 1.8;
-  if (perspective === "metabolic" || perspective === "functional") proteinPerKg = Math.max(proteinPerKg, 1.6);
-
-  const proteinG = Math.round(proteinPerKg * m.weightKg);
-  let fatPct = 30;
-  let carbsPct = 40;
-  let proteinPct = Math.round((proteinG * 4 * 100) / dailyTarget);
-
-  if (perspective === "metabolic") {
-    fatPct = 40;
-    carbsPct = Math.max(20, 100 - proteinPct - fatPct);
-  } else if (perspective === "cdc") {
-    fatPct = 30;
-    carbsPct = Math.max(40, 100 - proteinPct - fatPct);
-  } else if (goal === "strength") {
-    carbsPct = 45;
-    fatPct = Math.max(20, 100 - proteinPct - carbsPct);
-  } else {
-    carbsPct = Math.max(25, 100 - proteinPct - fatPct);
+  if (
+    perspective === "metabolic" ||
+    perspective === "functional" ||
+    perspective === "fitness" ||
+    perspective === "alternative"
+  ) {
+    proteinPerKg = Math.max(proteinPerKg, 1.6);
   }
 
-  // Recalc grams from remaining calories after protein
+  const proteinG = Math.round(proteinPerKg * m.weightKg);
+
+  /** Relative fat:carb shares of calories left after protein (not “fill leftover with carbs”). */
+  let fatShareOfRemainder = 0.4;
+  let carbShareOfRemainder = 0.6;
+
+  if (perspective === "cdc") {
+    // AMDR-style: more carbs, moderate fat
+    fatShareOfRemainder = goal === "strength" ? 0.3 : 0.35;
+    carbShareOfRemainder = 1 - fatShareOfRemainder;
+  } else if (perspective === "metabolic") {
+    // Lower-carb leaning alternative (~15–25% of total kcal carbs for many adults)
+    fatShareOfRemainder = 0.7;
+    carbShareOfRemainder = 0.3;
+  } else if (
+    perspective === "fitness" ||
+    perspective === "alternative" ||
+    perspective === "functional"
+  ) {
+    // Metabolic-fitness / blended alt — lower refined-carb pattern, not CDC plate
+    fatShareOfRemainder = goal === "strength" ? 0.55 : 0.65;
+    carbShareOfRemainder = 1 - fatShareOfRemainder;
+  } else if (perspective === "food_first") {
+    // Whole-food carbs still welcome for fiber, but below CDC
+    fatShareOfRemainder = 0.55;
+    carbShareOfRemainder = 0.45;
+  } else {
+    // clean_living and any other alt
+    fatShareOfRemainder = 0.6;
+    carbShareOfRemainder = 0.4;
+  }
+
   const proteinKcal = proteinG * 4;
   const remaining = Math.max(400, dailyTarget - proteinKcal);
-  const fatShare = fatPct / (fatPct + carbsPct);
-  const fatG = Math.round((remaining * fatShare) / 9);
-  const carbsG = Math.round((remaining * (1 - fatShare)) / 4);
-  proteinPct = Math.round((proteinKcal * 100) / dailyTarget);
+  const fatG = Math.round((remaining * fatShareOfRemainder) / 9);
+  const carbsG = Math.round((remaining * carbShareOfRemainder) / 4);
+  const proteinPct = Math.round((proteinKcal * 100) / dailyTarget);
   const fatPctFinal = Math.round((fatG * 9 * 100) / dailyTarget);
   const carbsPctFinal = Math.max(0, 100 - proteinPct - fatPctFinal);
 
@@ -268,7 +288,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   return {
     disclaimer: TARGETS_DISCLAIMER,
     method:
-      "Sleep band from goal; calories via Mifflin–St Jeor BMR × activity factor with goal offset; exercise kcal from activity gap; macros from protein g/kg + fat/carb split by lens/goal; amino acids from mg/kg educational patterns; vitamins/minerals from general adult reference ranges by sex/age.",
+      "Sleep band from goal; calories via Mifflin–St Jeor BMR × activity factor with goal offset; exercise kcal from activity gap; macros from protein g/kg + fat/carb split by plan style (CDC-style carb-forward; alternative lenses lower-carb leaning, educational only); amino acids from mg/kg educational patterns; vitamins/minerals from general adult reference ranges by sex/age.",
     sleep: {
       hoursMin,
       hoursTarget,
