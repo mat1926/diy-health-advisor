@@ -183,7 +183,6 @@ function vitalsWatchouts(m: MetricsInput, watchouts: string[]) {
 
 function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const bodyMass = m.heightCm && m.weightKg ? bmi(m.heightCm, m.weightKg) : null;
-  const goal = m.primaryGoal ?? "general";
   const perspectiveId = resolvePerspective(m.perspective);
   const perspective = PERSPECTIVES[perspectiveId];
   const pillars = buildPillars(plan, m);
@@ -198,37 +197,30 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const lifeExpectancy = estimateLifeExpectancy(m);
 
   const summaryParts = [
-    `7-day DIY plan ready (Rest · Nutrition · Exercise)`,
+    "7-day DIY plan ready",
     nutritionKit
-      ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · Vitamin D3 · pH · Multistix · RENPHO BP/scale`
+      ? `~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi · D3 · vitals kit`
       : null,
-    foodPlan ? "detailed food plan included" : null,
     weightProgress
-      ? `progress forecast ~${weightProgress.pace.weeklyLossLb} lb/week (educational)`
+      ? `~${weightProgress.pace.weeklyLossLb} lb/week pace`
       : null,
-    targets?.fatStores?.excessLb
-      ? targets.fatStores.reservesLine
-      : null,
+    targets?.fatStores?.excessLb ? targets.fatStores.reservesShort : null,
     doctorReview
-      ? `alternative blend metric review: ${doctorReview.findings.length} finding(s) · ${doctorReview.summaries.length} summary(ies)`
+      ? `metric review: ${pluralCount(doctorReview.findings.length, "finding")} · ${pluralCount(doctorReview.summaries.length, "summary", "summaries")}`
       : null,
     targets
-      ? `targets: sleep ${targets.sleep.hoursTarget}h · ${
-          targets.priorityFocus === "alt_protein_micros"
-            ? `protein ${targets.macros.proteinG}g (goal) · vitamins/minerals/AA`
-            : `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
-        }`
+      ? targets.priorityFocus === "alt_protein_micros"
+        ? `protein ${targets.macros.proteinG}g · micros`
+        : `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
       : null,
-    `${perspective.shortName} lens`,
-    `age ${m.age ?? "n/a"}, activity ${m.activityLevel ?? "n/a"}, goal ${goal}`,
+    `${perspective.shortName} · age ${m.age ?? "n/a"} · ${m.activityLevel ?? "n/a"} activity`,
     bodyMass ? `BMI ≈ ${bodyMass}` : null,
-    "educational only — not a diagnosis.",
+    "educational only",
   ].filter(Boolean);
 
   const watchouts: string[] = [
-    "Sudden chest pain, severe shortness of breath, fainting, confusion, or uncontrolled bleeding need emergency care.",
+    "Emergency: sudden chest pain, severe shortness of breath, fainting, confusion, or uncontrolled bleeding — call your local emergency number.",
     "Do not start/stop prescription medication, herbs, or cleanses based on this tool alone.",
-    lensDisclaimerFor(perspectiveId),
   ];
   if (perspectiveId === "cdc") {
     watchouts.push(CDC_NOTE);
@@ -250,9 +242,9 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   }
 
   if (lifeExpectancy && lifeExpectancy.comparison.yearsVsIdeal < -1) {
-    pillars.nutrition.items = uniquePush(
-      pillars.nutrition.items,
-      `Illustrative longevity gap vs ideal measurements: about ${Math.abs(lifeExpectancy.comparison.yearsVsIdeal)} years on this simple model — close it with sustainable habits, not crash diets.`,
+    pillars.exercise.items = uniquePush(
+      pillars.exercise.items,
+      `Illustrative longevity gap vs ideal: about ${Math.abs(lifeExpectancy.comparison.yearsVsIdeal)} years on this model — close it with sustainable habits.`,
     );
   }
 
@@ -260,7 +252,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     pillars.rest.weeklyTarget = `Sleep ${targets.sleep.hoursTarget}h (band ${targets.sleep.hoursMin}–${targets.sleep.hoursMax}) · wake ±30 min · daily downshift`;
     pillars.nutrition.weeklyTarget =
       targets.priorityFocus === "alt_protein_micros"
-        ? `PROTEIN ${targets.macros.proteinG}g (goal) · vitamins/minerals/AA · ${targets.fatStores?.reservesLine ?? "carbs/fat flexible · no calorie target"}`
+        ? `PROTEIN ${targets.macros.proteinG}g · vitamins/minerals/AA · carbs/fat flexible (see weight forecast for store-draw)`
         : `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g · carbs ${targets.macros.carbsG}g · fat ${targets.macros.fatG}g · water ~${targets.macros.waterLiters}L`;
     pillars.exercise.weeklyTarget = `~${targets.exercise.dailyBurnTargetKcal} kcal/day movement burn · ~${targets.exercise.weeklyBurnTargetKcal} kcal/week`;
   }
@@ -274,7 +266,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   if (nutritionKit) {
     pillars.nutrition.items = uniquePush(
       pillars.nutrition.items,
-      "Vitamin D3 (kit) is part of the plan — stop immediately and contact a clinician if overload symptoms appear (nausea, vomiting, thirst, frequent urination, confusion, muscle weakness, etc.).",
+      "Vitamin D3 (kit) included — stop if overload signs appear (see safety list).",
     );
   }
 
@@ -299,14 +291,12 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     foodPlan,
     weightProgress,
     doctorReview,
-    summary: summaryParts.join(" — ") + ".",
+    summary: summaryParts.join(" · ") + ".",
     actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
-    watchouts: [...new Set(watchouts)].slice(0, 8),
+    watchouts: [...new Set(watchouts)].slice(0, 6),
     whenToSeekCare: [
-      "New or worsening symptoms, unexplained weight change, chest pain, or mood crisis.",
-      "Before pregnancy-related changes, surgery recovery, chronic disease management, or any cleanse/fast beyond gentle meal timing.",
-      "Urinary pain, fever, or blood in urine — seek clinical care (DIY pH strips are not enough).",
-      "Before high-dose vitamin D or iron-containing multis if you have kidney disease, hypercalcemia, or hemochromatosis risk — ask a clinician.",
+      "Seek care for new/worsening symptoms, unexplained weight change, chest pain, mood crisis, or urinary pain/fever/blood in urine.",
+      "Ask a clinician before high-dose vitamin D or iron multis if you have kidney disease, hypercalcemia, or hemochromatosis risk — and before pregnancy-related changes, surgery recovery, or aggressive cleanses/fasts.",
     ],
     plan,
     source: "template",
@@ -315,6 +305,11 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
 
 function uniquePush(items: string[], extra: string): string[] {
   return [...new Set([...items, extra])].slice(0, 6);
+}
+
+function pluralCount(n: number, singular: string, plural?: string): string {
+  const p = plural ?? `${singular}s`;
+  return `${n} ${n === 1 ? singular : p}`;
 }
 
 function parsePillar(

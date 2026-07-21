@@ -157,14 +157,14 @@ export const PERSPECTIVES: Record<
   },
 };
 
-export const LENS_DISCLAIMER_CDC = `This plan uses a CDC-style public-health habit framework for education only (activity, strength, produce, sleep, limiting added sugars/sodium). VitalGauge is not affiliated with the CDC. None of this is a diagnosis, prescription, or cure.`;
+export const LENS_DISCLAIMER_CDC = `Plan style: CDC-style public-health habits for education only — not affiliated with the CDC; not a diagnosis or prescription.`;
 
-export const LENS_DISCLAIMER_ALT = `This plan uses educational themes often discussed in alternative / metabolic wellness teaching (lower refined carbs, whole foods, recovery, DIY self-tracking). It does not use CDC Dietary Guidelines or CDC activity targets. VitalGauge is not affiliated with any private clinician. None of this is a diagnosis, prescription, or cure.`;
+export const LENS_DISCLAIMER_ALT = `Plan style: alternative / metabolic wellness themes (protein-forward, lower refined carbs, DIY tracking) — not CDC guidelines; not affiliated with any clinician; not a diagnosis or prescription.`;
 
 /** @deprecated Prefer lensDisclaimerFor(perspective) */
 export const LENS_DISCLAIMER = LENS_DISCLAIMER_CDC;
 
-export const CDC_NOTE = `CDC-style targets here are educational summaries of common public-health habit guidance (activity, strength, produce, sleep, limiting added sugars/sodium). They are not a personal medical plan from the CDC.`;
+export const CDC_NOTE = `CDC-style numbers here are educational habit summaries — not a personal CDC medical plan.`;
 
 export function isCdcPerspective(id: PerspectiveId): boolean {
   return id === "cdc";

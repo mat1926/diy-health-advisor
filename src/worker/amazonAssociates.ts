@@ -50,6 +50,12 @@ export const LOCAL_PRODUCT_IMAGES: Record<string, string> = {
   B01N1UX8RW: "/products/B01N1UX8RW.jpg", // RENPHO smart scale
   B0FJFL8KP4: "/products/B0FJFL8KP4.jpg", // MorphoScan Nova
   B097Q4SLDP: "/products/B097Q4SLDP.jpg", // KardiaMobile
+  B09R9Q47LJ: "/products/B09R9Q47LJ.jpg", // New Barn regenerative eggs
+  B01NBBVPLI: "/products/B01NBBVPLI.jpg", // Stonyfield Greek yogurt
+  B07B8W4LFX: "/products/B07B8W4LFX.jpg", // Earthborn K bicarbonate
+  B000AMUWLK: "/products/B000AMUWLK.jpg", // Trace ConcenTrace drops
+  B07NWMVMT1: "/products/B07NWMVMT1.jpg", // NOW Magnesium Glycinate
+  B0013OSM5W: "/products/B0013OSM5W.jpg", // NOW Coral Calcium Plus
 };
 
 /**

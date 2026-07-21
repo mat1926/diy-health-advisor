@@ -1,6 +1,6 @@
 import { bmi, type MetricsInput } from "./plans";
 
-export const LIFE_EXPECTANCY_DISCLAIMER = `Life-expectancy figures here are rough DIY illustrations for education and motivation only. They are not actuarial calculations, medical prognoses, or predictions of how long you will live. Real longevity depends on genetics, medical history, environment, luck, and factors this tool does not measure. Do not make medical or financial decisions from these numbers.`;
+export const LIFE_EXPECTANCY_DISCLAIMER = `Illustrative only — not an actuarial or medical prediction. Genetics, history, and unmeasured factors matter more than this simple model.`;
 
 /** Mid “healthy” BMI used for the ideal comparison (educational, not personalized). */
 export const IDEAL_BMI = 22.5;
@@ -148,11 +148,11 @@ export function estimateLifeExpectancy(m: MetricsInput): LifeExpectancyEstimate 
 
   let summary: string;
   if (absGap < 0.5) {
-    summary = `Your illustrative estimate is about even with the “ideal measurements” scenario (within ~0.5 year).`;
+    summary = `About even with the ideal-measurements scenario (~${idealWeightLb} lb / BMI ${IDEAL_BMI}).`;
   } else if (yearsVsIdeal < 0) {
-    summary = `Your illustrative estimate is about ${absGap} year${absGap === 1 ? "" : "s"} below the ideal-measurements scenario — mainly a motivation signal for habits, not a prediction.`;
+    summary = `About ${absGap} year${absGap === 1 ? "" : "s"} below ideal measurements (~${idealWeightLb} lb) — motivation signal, not a prediction.`;
   } else {
-    summary = `Your illustrative estimate is about ${absGap} year${absGap === 1 ? "" : "s"} above the ideal-measurements scenario on this simple model — still not a guarantee.`;
+    summary = `About ${absGap} year${absGap === 1 ? "" : "s"} above ideal measurements on this simple model — still not a guarantee.`;
   }
 
   return {
@@ -172,11 +172,7 @@ export function estimateLifeExpectancy(m: MetricsInput): LifeExpectancyEstimate 
       expectedAge: ideal.expectedAge,
       remainingYears: ideal.remainingYears,
       assumptions: [
-        `BMI ${IDEAL_BMI} (about ${idealWeightLb} lbs at your height)`,
-        "Activity: active",
-        "Sleep: ~8 hours / night",
-        "Stress: low (about 3/10)",
-        "Resting heart rate: ~62 bpm",
+        `~${idealWeightLb} lb (BMI ${IDEAL_BMI}) · active · ~8h sleep · low stress · RHR ~62`,
       ],
     },
     comparison: {

@@ -95,6 +95,39 @@ a:hover { color: var(--accent); }
   align-items: flex-start;
 }
 .kit-bundle .btn { margin-top: 0.25rem; }
+
+.panel-commerce {
+  border-color: rgba(232, 168, 98, 0.45);
+  background: linear-gradient(180deg, rgba(80, 50, 20, 0.28), var(--card));
+}
+.commerce-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.advanced-optional {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.65rem 0.9rem 0.9rem;
+  background: rgba(0, 0, 0, 0.14);
+}
+.advanced-optional > summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+.advanced-optional > summary::-webkit-details-marker { display: none; }
+.advanced-optional > summary::before {
+  content: "▸ ";
+  color: var(--accent);
+}
+.advanced-optional[open] > summary::before { content: "▾ "; }
+
 .kit-bundle-hero {
   width: 100%;
   aspect-ratio: 4 / 3;

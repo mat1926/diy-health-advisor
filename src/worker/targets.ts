@@ -159,7 +159,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     } else if (fatStores && fatStores.excessLb > 0 && fatStores.dailyDrawKcal > 0) {
       fromFatStoresKcal = fatStores.dailyDrawKcal;
       dailyTarget = Math.max(1200, Math.round(tdee - fromFatStoresKcal));
-      goalAdjustment = `Alternative: hit protein, vitamins, minerals, and amino acids. ${fatStores.reservesLine} ~${fromFatStoresKcal} kcal/day may draw from fat stores (educational). Carbs/fat flexible — no calorie target.`;
+      goalAdjustment = `Alternative: hit protein, vitamins, minerals, and amino acids. ${fatStores.reservesShort}. ~${fromFatStoresKcal} kcal/day may draw from fat stores (educational). Carbs/fat flexible — no calorie target.`;
     } else {
       dailyTarget = Math.max(1200, Math.round(tdee - 400));
       fromFatStoresKcal = Math.max(0, tdee - dailyTarget);
@@ -392,7 +392,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     priorityNote: cdc
       ? "CDC-style: balanced macros including carbs and fat as intentional plate targets."
       : fatStores && fatStores.excessLb > 0
-        ? `Alternative: hit protein + micros. ${fatStores.reservesLine} No calorie target — carbs/fat flexible.`
+        ? `Alternative: hit protein + micros. ${fatStores.reservesShort}. No calorie target — carbs/fat flexible.`
         : "Alternative: aim to hit protein, amino acids, vitamins, and minerals. No calorie target — carbs/fat flexible.",
     fatStores: cdc ? null : fatStores,
     sleep: {

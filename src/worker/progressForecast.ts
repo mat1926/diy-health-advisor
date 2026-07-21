@@ -1,7 +1,8 @@
 import { bmi, type MetricsInput } from "./plans";
 import type { DetailedTargets } from "./targets";
+import { IDEAL_BMI } from "./lifeExpectancy";
 
-export const PROGRESS_DISCLAIMER = `Weight-progress forecasts are rough DIY illustrations only. They assume a steady calorie gap, ~3,500 kcal ≈ 1 lb of body weight (a simplified teaching rule), and that you follow the plan without medical complications. Real results vary widely. This is not a clinical weight-loss prescription. Stop and seek care if you feel unwell, lose weight very rapidly, or have an eating-disorder history.`;
+export const PROGRESS_DISCLAIMER = `Illustrative only (~3,500 kcal ≈ 1 lb teaching rule). Not a clinical weight-loss prescription — stop and seek care if you feel unwell or lose weight very rapidly.`;
 
 /** Show progress tools when BMI is in overweight+ range (educational WHO cut-point). */
 export const OVERWEIGHT_BMI = 25;
@@ -35,6 +36,7 @@ export type WeightProgressForecast = {
     note: string;
   };
   milestones: ProgressMilestone[];
+  /** Trajectory toward ideal weight (BMI 22.5 educational model). */
   toHealthyBmi: {
     targetBmi: number;
     targetWeightLb: number;
@@ -42,6 +44,8 @@ export type WeightProgressForecast = {
     estimatedWeeks: number | null;
     summary: string;
   };
+  /** True when Alternative protein/micros plan drives the forecast. */
+  alternative: boolean;
   modifiersHint: string;
 };
 
@@ -59,7 +63,7 @@ export function isOverweightForForecast(m: MetricsInput): boolean {
 }
 
 /**
- * Educational weight-change forecast.
+ * Educational weight-change forecast toward ideal weight (BMI 22.5).
  * - CDC: when BMI ≥ 25
  * - Alternative (protein/micros): whenever the plan runs a calorie deficit (default)
  */
@@ -83,28 +87,30 @@ export function buildWeightProgressForecast(
 
   let note = altProteinMicros
     ? targets.fatStores && targets.fatStores.excessLb > 0
-      ? `${targets.fatStores.reservesLine} Drawing ~${dailyDeficitKcal} kcal/day from stores.`
-      : "Alternative plan forecast: deficit from protein-forward food target (carbs/fat flexible)."
-    : "Educational pace from calorie gap ÷ 3,500 kcal per lb.";
+      ? `~${dailyDeficitKcal} kcal/day from fat stores`
+      : "Protein-forward deficit (carbs/fat flexible)"
+    : "From calorie gap ÷ 3,500 kcal/lb";
   if (weeklyLossLb > 2) {
     weeklyLossLb = 2;
-    note =
-      "Capped at ~2 lb/week for this illustration — faster loss needs clinician supervision.";
+    note = "Capped at ~2 lb/week — faster loss needs clinician supervision";
   }
   if (weeklyLossLb < 0.2 && dailyDeficitKcal > 0) {
-    note = "Very small gap — progress will look slow; modifiers can increase the deficit.";
+    note = "Very small gap — progress will look slow";
   }
   if (dailyDeficitKcal <= 0) {
     weeklyLossLb = 0;
-    note = "No calorie deficit in this plan — add a calorie cut or exercise bonus to project loss.";
+    note = "No deficit — add exercise burn to project loss";
   }
 
   const monthlyLossLb = Math.round(weeklyLossLb * 4.3 * 10) / 10;
   const heightM = m.heightCm / 100;
-  const targetBmi = 24.9;
-  const targetWeightKg = targetBmi * heightM * heightM;
-  const targetWeightLb = kgToLb(targetWeightKg);
+  // Align with life-expectancy / fat-store ideal (not the overweight cut-point 24.9)
+  const targetBmi = IDEAL_BMI;
+  const targetWeightLb =
+    targets.fatStores?.idealWeightLb ??
+    kgToLb(targetBmi * heightM * heightM);
   const poundsToGo = Math.max(0, Math.round((weightLb - targetWeightLb) * 10) / 10);
+  const idealLabel = `ideal weight ~${targetWeightLb} lb`;
 
   const milestones: ProgressMilestone[] = [];
   for (const weeks of [4, 8, 12]) {
@@ -125,19 +131,21 @@ export function buildWeightProgressForecast(
 
   let summary: string;
   if (dailyDeficitKcal <= 0) {
-    summary = "This calorie setting isn’t in a deficit — no fat-loss trajectory on the simple model.";
+    summary = "No deficit on this setting — no fat-loss trajectory.";
+  } else if (poundsToGo <= 0) {
+    summary = `Already at or near ${idealLabel}.`;
   } else if (currentBmi < OVERWEIGHT_BMI) {
-    summary = `On this Alternative deficit (~${dailyDeficitKcal} kcal/day), illustrative loss is ~${weeklyLossLb} lb/week. BMI is already under 25 — only pursue if a clinician agrees.`;
+    summary = `~${weeklyLossLb} lb/week toward ${idealLabel} (~${dailyDeficitKcal} kcal/day). BMI already under 25 — only if a clinician agrees.`;
   } else if (!estimatedWeeks) {
-    summary = `Illustrative pace ~${weeklyLossLb} lb/week on this plan’s calorie gap.`;
+    summary = `~${weeklyLossLb} lb/week toward ${idealLabel}.`;
   } else if (estimatedWeeks > 104) {
-    summary = `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) would take well over 2 years on this simple model.`;
+    summary = `~${weeklyLossLb} lb/week → ${idealLabel} would take well over 2 years on this model.`;
   } else {
-    summary = altProteinMicros
-      ? targets.fatStores && targets.fatStores.excessLb > 0
-        ? `${targets.fatStores.reservesLine} At ~${weeklyLossLb} lb/week from a ~${dailyDeficitKcal} kcal/day store draw, BMI ~${targetBmi} is roughly ${estimatedWeeks} weeks away — illustrative only.`
-        : `At ~${weeklyLossLb} lb/week on this Alternative protein-forward deficit, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`
-      : `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`;
+    const stores =
+      altProteinMicros && targets.fatStores && targets.fatStores.excessLb > 0
+        ? `${targets.fatStores.reservesShort}. `
+        : "";
+    summary = `${stores}~${weeklyLossLb} lb/week → ${idealLabel} in ~${estimatedWeeks} weeks (illustrative).`;
   }
 
   const category: WeightProgressForecast["current"]["category"] =
@@ -172,10 +180,9 @@ export function buildWeightProgressForecast(
       estimatedWeeks,
       summary,
     },
+    alternative: altProteinMicros,
     modifiersHint: altProteinMicros
-      ? targets.fatStores && targets.fatStores.excessLb > 0
-        ? `Hit protein + micros from kit/food options; energy gap is assumed from fat stores. Adjust store-draw pace via exercise — no calorie target on Alternative.`
-        : "Alternative: protein + micros primary (no calorie target). Adjust exercise below to update the forecast."
-      : "Use the controls below to cut more calories or add exercise burn, then update the forecast and food plan.",
+      ? "Energy gap from fat stores; raise exercise burn below to speed the forecast. No calorie target on Alternative."
+      : "Cut calories or add exercise burn, then update the forecast.",
   };
 }

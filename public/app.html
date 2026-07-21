@@ -37,11 +37,11 @@
           Enter your demographics, then get a detailed <strong>Rest · Nutrition · Exercise</strong> plan.
         </p>
 
-        <form id="metrics-form" class="panel">
+        <form id="metrics-form" class="panel" novalidate>
           <div class="form-grid">
             <label>
               Age
-              <input name="age" type="number" min="13" max="120" required />
+              <input name="age" type="number" min="13" max="120" required placeholder="e.g. 45" />
             </label>
             <label>
               Sex
@@ -54,15 +54,15 @@
             </label>
             <label>
               Height (ft)
-              <input name="heightFt" type="number" min="3" max="8" step="1" required inputmode="numeric" />
+              <input name="heightFt" type="number" min="3" max="8" step="1" required inputmode="numeric" placeholder="e.g. 5" />
             </label>
             <label>
               Height (in)
-              <input name="heightIn" type="number" min="0" max="11" step="1" required inputmode="numeric" value="0" />
+              <input name="heightIn" type="number" min="0" max="11" step="1" required inputmode="numeric" placeholder="e.g. 10" />
             </label>
             <label>
               Weight (lbs)
-              <input name="weightLb" type="number" min="66" max="660" step="0.1" required inputmode="decimal" />
+              <input name="weightLb" type="number" min="66" max="660" step="0.1" required inputmode="decimal" placeholder="e.g. 180" />
             </label>
             <label>
               Activity level
@@ -126,9 +126,11 @@
             </p>
           </div>
 
-          <div class="form-section" style="grid-column: 1 / -1; margin-top: 0.5rem">
-            <h3 style="margin: 0 0 0.35rem; font-size: 1.05rem">Multistix 10 SG urine pads</h3>
-            <p class="muted" style="margin: 0 0 0.75rem; font-size: 0.9rem">
+          <details class="form-section advanced-optional" style="margin-top: 1rem">
+            <summary>
+              <strong>Advanced optional</strong> — Multistix 10 SG urine pads
+            </summary>
+            <p class="muted" style="margin: 0.65rem 0 0.75rem; font-size: 0.9rem">
               Included in every Amazon kit bundle. Log readings from
               <a id="multistix-link" href="https://www.amazon.com/dp/B06WCZVMLC" target="_blank" rel="noopener noreferrer">Siemens Multistix 10 SG</a>
               (or equivalent 10-parameter strips). Match the bottle color chart after the labeled wait time. Educational DIY only — not a lab report.
@@ -185,7 +187,7 @@
                 </select>
               </label>
               <label>
-                pH
+                Urine pH (pad)
                 <input name="urinePh" type="number" min="4.5" max="9" step="0.5" inputmode="decimal" placeholder="e.g. 6.0" />
               </label>
               <label>
@@ -231,7 +233,7 @@
                 </select>
               </label>
             </div>
-          </div>
+          </details>
 
           <div class="form-grid">
             <label class="plus-only">
@@ -265,7 +267,8 @@
             <button class="btn btn-primary" type="submit" id="submit-btn">Get my 7-day plan</button>
             <a class="btn btn-ghost" href="/disclaimer.html">Read disclaimer</a>
           </div>
-          <p class="error" id="form-error" hidden></p>
+          <p class="error" id="form-error" hidden role="alert" aria-live="assertive"></p>
+          <p class="muted" id="form-status" hidden aria-live="polite" style="margin: 0.5rem 0 0; font-size: 0.9rem"></p>
         </form>
 
         <div class="result" id="result" hidden>
@@ -291,16 +294,12 @@
                 <p class="muted" id="out-life-ideal-detail"></p>
               </div>
             </div>
-            <ul id="out-life-assumptions" style="margin-top: 0.75rem"></ul>
-            <p class="muted" id="out-life-disclaimer" style="margin-top: 0.75rem; font-size: 0.9rem"></p>
+            <p class="muted" id="out-life-disclaimer" style="margin-top: 0.75rem; font-size: 0.85rem"></p>
           </article>
 
           <article class="panel" id="out-progress-wrap" hidden>
             <h3>Weight-loss forecast</h3>
-            <p class="muted" id="out-progress-alt-note" hidden>
-              Alternative plans treat weight above ideal BMI as mobilizable fat stores that can supply part of daily energy while food prioritizes protein and micronutrients.
-            </p>
-            <p id="out-progress-summary"></p>
+            <p id="out-progress-summary" class="muted"></p>
             <div class="form-grid" style="margin-top: 1rem">
               <div>
                 <p class="badge">Now</p>
@@ -313,14 +312,14 @@
                 <p class="muted" id="out-progress-pace-detail"></p>
               </div>
               <div>
-                <p class="badge">To BMI ~24.9</p>
+                <p class="badge" id="out-progress-goal-badge">To ideal weight</p>
                 <p class="target-stat" id="out-progress-goal"></p>
                 <p class="muted" id="out-progress-goal-detail"></p>
               </div>
             </div>
             <h3 style="margin-top: 1.25rem">Milestones</h3>
             <ul id="out-progress-milestones"></ul>
-            <h3 style="margin-top: 1.25rem">Modify plan &amp; update forecast</h3>
+            <h3 style="margin-top: 1.25rem">Adjust pace</h3>
             <p class="muted" id="out-progress-hint"></p>
             <div class="form-grid" style="margin-top: 0.75rem">
               <label id="adj-calories-label">
@@ -345,9 +344,9 @@
               </label>
             </div>
             <div class="form-actions" style="margin-top: 0.75rem">
-              <button class="btn btn-primary" type="button" id="btn-update-forecast">Update forecast &amp; food plan</button>
+              <button class="btn btn-primary" type="button" id="btn-update-forecast">Update forecast</button>
             </div>
-            <p class="muted" id="out-progress-disclaimer" style="margin-top: 1rem; font-size: 0.9rem"></p>
+            <p class="muted" id="out-progress-disclaimer" style="margin-top: 1rem; font-size: 0.85rem"></p>
           </article>
 
           <div class="pillars" id="out-pillars" hidden>
@@ -410,8 +409,6 @@
             <ul id="out-kit-schedule"></ul>
             <h3 style="margin-top: 1.25rem">Sample day</h3>
             <ul id="out-kit-sample"></ul>
-            <h3 style="margin-top: 1.25rem">Gaps this kit cannot fill</h3>
-            <ul id="out-kit-gaps"></ul>
             <div id="out-kit-d3-wrap" hidden style="margin-top: 1.25rem">
               <h3>Vitamin D3 — stop if overload signs appear</h3>
               <p id="out-kit-d3-notice"></p>
@@ -443,8 +440,6 @@
               </div>
             </div>
 
-            <h3 style="margin-top: 1.25rem">What whey + NOW do <em>not</em> cover</h3>
-            <ul id="out-food-kit-gaps"></ul>
             <div id="out-food-stack-eval-wrap" hidden style="margin-top: 1rem">
               <h3>Shortfall-stack evaluation</h3>
               <ul id="out-food-stack-eval"></ul>
@@ -504,40 +499,6 @@
 
             <h3 style="margin-top: 1.25rem" id="out-food-meals-title">Meals (grouped)</h3>
             <div id="out-food-meals"></div>
-            <h3 style="margin-top: 1.25rem">Vitamin · mineral · amino coverage</h3>
-            <p class="muted" style="margin: 0 0 0.75rem; font-size: 0.9rem">
-              Compact educational check — shared sources are noted once under each group.
-            </p>
-            <h4 style="margin: 0.75rem 0 0.35rem; font-size: 1rem">Vitamins</h4>
-            <p class="muted" id="out-food-vit-note" style="margin: 0 0 0.5rem; font-size: 0.85rem"></p>
-            <div class="table-wrap">
-              <table class="data-table" id="out-food-vit">
-                <thead>
-                  <tr><th>Vitamin</th><th>Coverage</th><th>Status</th></tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-            <h4 style="margin: 1rem 0 0.35rem; font-size: 1rem">Minerals</h4>
-            <p class="muted" id="out-food-min-note" style="margin: 0 0 0.5rem; font-size: 0.85rem"></p>
-            <div class="table-wrap">
-              <table class="data-table" id="out-food-min">
-                <thead>
-                  <tr><th>Mineral</th><th>Coverage</th><th>Status</th></tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-            <h4 style="margin: 1rem 0 0.35rem; font-size: 1rem">Amino acids</h4>
-            <p class="muted" id="out-food-aa-note" style="margin: 0 0 0.5rem; font-size: 0.85rem"></p>
-            <div class="table-wrap">
-              <table class="data-table" id="out-food-aa">
-                <thead>
-                  <tr><th>Amino acid</th><th>Coverage</th><th>Status</th></tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
             <h3 style="margin-top: 1.25rem" id="out-food-shop-title">Shopping list</h3>
             <ul id="out-food-shop"></ul>
             <h3 style="margin-top: 1.25rem">Prep tips</h3>
@@ -551,29 +512,10 @@
             <p class="muted" id="out-food-disclaimer" style="margin-top: 1rem; font-size: 0.9rem"></p>
           </article>
 
-          <article class="panel" id="out-actions-wrap" hidden>
-            <h3>Quick recap</h3>
-            <ul id="out-actions"></ul>
-          </article>
-          <article class="panel">
-            <h3>Watch-outs</h3>
-            <ul id="out-watchouts"></ul>
-          </article>
-          <article class="panel">
-            <h3>When to seek care</h3>
-            <ul id="out-care"></ul>
-          </article>
-          <article class="panel disclaimer-banner">
-            <strong>Reminder:</strong>
-            <span id="out-disclaimer"></span>
-          </article>
-          <article class="panel disclaimer-banner">
-            <strong>Plan style:</strong>
-            <span id="out-lens-disclaimer"></span>
-          </article>
         </div>
 
-        <article class="panel" id="kit-bundles-panel" style="margin-top: 1.5rem">
+        <article class="panel panel-commerce" id="kit-bundles-panel" style="margin-top: 1.5rem">
+          <p class="commerce-label">Shopping · Amazon Associates</p>
           <h3 style="margin: 0 0 0.35rem; font-size: 1.05rem">Amazon kit bundles</h3>
           <p class="muted" style="margin: 0 0 0.75rem; font-size: 0.9rem">
             One-click Amazon cart with the full Nutrition Kit (includes Multistix 10 SG). Advanced kits swap in the MorphoScan Nova
@@ -581,6 +523,12 @@
           </p>
           <div id="kit-bundles" class="kit-bundles"></div>
           <p class="muted" id="kit-bundles-affiliate" hidden style="margin: 0.75rem 0 0; font-size: 0.85rem"></p>
+        </article>
+
+        <article class="panel" id="out-safety-wrap" style="margin-top: 1.5rem">
+          <h3>Safety &amp; care</h3>
+          <ul id="out-safety"></ul>
+          <p class="muted" id="out-safety-footnote" style="margin-top: 0.75rem; font-size: 0.9rem"></p>
         </article>
       </section>
     </div>

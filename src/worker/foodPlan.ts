@@ -5,6 +5,7 @@ import {
   KIT_PRODUCTS,
   SHORTFALL_STAPLES,
   VITAMIN_D_OVERLOAD_NOTICE,
+  VITAMIN_D_OVERLOAD_SHORT,
   VITAMIN_D_OVERLOAD_SYMPTOMS,
 } from "./nutritionKit";
 
@@ -211,7 +212,7 @@ function d3Softgel(): FoodItem {
     carbsG: 0,
     fatG: 0,
     kit: true,
-    notes: `${KIT_PRODUCTS.d3.url} · ${VITAMIN_D_OVERLOAD_NOTICE}`,
+    notes: `${KIT_PRODUCTS.d3.url} · ${VITAMIN_D_OVERLOAD_SHORT}`,
   };
 }
 
@@ -219,12 +220,12 @@ function regenerativeEggs(): FoodItem {
   return {
     name: SHORTFALL_STAPLES.eggs.name,
     portion: SHORTFALL_STAPLES.eggs.portion,
-    kcal: 210,
+    kcal: SHORTFALL_STAPLES.eggs.kcal,
     proteinG: SHORTFALL_STAPLES.eggs.proteinG,
-    carbsG: 1,
-    fatG: 15,
+    carbsG: 2,
+    fatG: SHORTFALL_STAPLES.eggs.fatG,
     kit: false,
-    notes: "Shortfall staple — choline + complete protein",
+    notes: `Shortfall staple — ~${SHORTFALL_STAPLES.eggs.cholineMg} mg choline + complete protein`,
   };
 }
 
@@ -366,8 +367,7 @@ const SHORTFALL_SUGGESTIONS: Record<string, string[]> = {
   "Pantothenic acid (B5)": [SHORTFALL_STAPLES.eggs.name, "Avocado", "Chicken"],
   Biotin: [SHORTFALL_STAPLES.eggs.name, "Nuts", "Seeds"],
   Choline: [
-    `${SHORTFALL_STAPLES.eggs.name} (${SHORTFALL_STAPLES.eggs.portion}) — best DIY choline source`,
-    "Liver (occasional)",
+    "Liver (occasional) if you want variety beyond the daily egg stack",
   ],
   Calcium: [
     `${KIT_PRODUCTS.coralCalcium.name} as labeled`,
@@ -562,7 +562,7 @@ export function buildDetailedFoodPlan(
   if (alt) {
     shortfallStackEvaluation.push(
       `Increased whey: ~${wheyScoops} scoop(s) ≈ ${wheyProteinG}g protein.`,
-      `${SHORTFALL_STAPLES.eggs.name} (${SHORTFALL_STAPLES.eggs.portion}) ≈ ${SHORTFALL_STAPLES.eggs.proteinG}g protein + major choline/B12/selenium support.`,
+      `${SHORTFALL_STAPLES.eggs.name} (${SHORTFALL_STAPLES.eggs.portion}) ≈ ${SHORTFALL_STAPLES.eggs.proteinG}g protein + ~${SHORTFALL_STAPLES.eggs.cholineMg} mg choline (covers educational target).`,
       `${SHORTFALL_STAPLES.greekYogurt.name} (${SHORTFALL_STAPLES.greekYogurt.portion}) ≈ ${SHORTFALL_STAPLES.greekYogurt.proteinG}g protein + calcium/potassium support.`,
       `Stack protein total ≈ ${stackProteinG}g vs goal ~${proteinTarget}g (${pct(stackProteinG, proteinTarget)}%).`,
       `${KIT_PRODUCTS.magGlycinate.name}: ~200 mg Mg to close magnesium shortfall after multi.`,
@@ -603,9 +603,9 @@ export function buildDetailedFoodPlan(
         fromPlan = v.amount;
         fromMulti = "Kit NOW D3 10,000 IU included in plan — stop if overload symptoms";
       } else if (isCholine) {
-        // 3 eggs ≈ ~450 mg choline — often meets educational target
-        fromPlan = Math.min(v.amount, 450);
-        fromMulti = `${SHORTFALL_STAPLES.eggs.name} (${SHORTFALL_STAPLES.eggs.portion})`;
+        // 4 large eggs ≈ 588 mg choline — covers male 550 / female 425 educational targets
+        fromPlan = Math.min(v.amount, SHORTFALL_STAPLES.eggs.cholineMg);
+        fromMulti = `${SHORTFALL_STAPLES.eggs.name} (${SHORTFALL_STAPLES.eggs.portion} ≈ ${SHORTFALL_STAPLES.eggs.cholineMg} mg choline)`;
       } else if (MULTI_COVERED_VITAMINS.has(v.name)) {
         fromPlan = v.amount;
         fromMulti = "NOW ADAM/EVE (kit) — as labeled";
@@ -684,7 +684,7 @@ export function buildDetailedFoodPlan(
       aa.unit,
       fromPlan,
       alt
-        ? "Increased whey + regenerative eggs + organic Greek yogurt"
+        ? "Increased whey + eggs + Greek yogurt"
         : "Whey + meat/fish/eggs/yogurt",
       aa.note,
     );
@@ -702,7 +702,7 @@ export function buildDetailedFoodPlan(
       );
     } else {
       shortfallStackEvaluation.push(
-        `Evaluation: ${shortfalls.length} nutrient(s) still below 90% after the stack — see shortfalls table for remaining options.`,
+        `Evaluation: ${shortfalls.length} nutrient${shortfalls.length === 1 ? "" : "s"} still below 90% after the stack — see shortfalls table.`,
       );
     }
   }
@@ -782,23 +782,18 @@ export function buildDetailedFoodPlan(
 
   const kitGapSummary = alt
     ? [
-        "Alternative shortfall stack: increased whey + organic regenerative eggs + organic Greek yogurt + coral calcium + K bicarbonate + Mg glycinate + trace minerals. No calorie target.",
-        `Protein from stack ≈ ${stackProteinG}g of ~${proteinTarget}g goal (${pct(stackProteinG, proteinTarget)}%).`,
-        ...shortfallStackEvaluation.slice(0, 3),
+        `Protein from stack ≈ ${stackProteinG}g of ~${proteinTarget}g (${pct(stackProteinG, proteinTarget)}%).`,
         shortfalls.length > 0
-          ? `${shortfalls.length} nutrient(s) still below target after stack — see shortfalls.`
-          : "Stack appears to cover modeled primary targets (verify labels).",
-        "NOW D3 10,000 IU is included for vitamin D — discontinue immediately if overload symptoms appear.",
-        targets.fatStores && targets.fatStores.excessLb > 0
-          ? targets.fatStores.reservesLine
-          : "Little excess above ideal BMI modeled as fat stores.",
+          ? `${shortfalls.length} nutrient${shortfalls.length === 1 ? "" : "s"} still below target — see shortfalls.`
+          : "Modeled primary targets covered (verify labels).",
+        VITAMIN_D_OVERLOAD_SHORT,
       ]
     : [
         "NOW ADAM/EVE and NOW D3 do not provide meaningful calories, protein, carbs, fat, or fiber.",
-        `Whey (~${wheyScoops} scoop(s)) mainly covers protein (~${wheyProteinG}g) and a little energy (~${wheyKcal} kcal) — not a full macro plan.`,
-        `Still needed from food ≈ ${Math.max(0, targets.macros.proteinG - wheyProteinG)}g protein · ${Math.max(0, targets.macros.carbsG - wheyCarbsG)}g carbs · ${Math.max(0, targets.macros.fatG - wheyFatG)}g fat · ${targets.macros.fiberG}g fiber · ~${Math.max(0, targets.calories.dailyTarget - wheyKcal)} kcal.`,
+        `Whey (~${wheyScoops} scoop(s)) mainly covers protein (~${wheyProteinG}g) — not a full macro plan.`,
+        `Still needed from food ≈ ${Math.max(0, targets.macros.proteinG - wheyProteinG)}g protein · ${Math.max(0, targets.macros.carbsG - wheyCarbsG)}g carbs · ${Math.max(0, targets.macros.fatG - wheyFatG)}g fat · ${targets.macros.fiberG}g fiber.`,
         "Potassium, sodium, and most food-matrix nutrients still come from meals even when a multi is used.",
-        "Vitamin D3 (kit) is included — stop and seek care if overload symptoms appear.",
+        VITAMIN_D_OVERLOAD_SHORT,
       ];
 
   const itemized: ItemizedFoodLine[] = [];
@@ -820,8 +815,22 @@ export function buildDetailedFoodPlan(
     }
   }
 
+  const stackNames = new Set([
+    SHORTFALL_STAPLES.eggs.name,
+    SHORTFALL_STAPLES.greekYogurt.name,
+    KIT_PRODUCTS.whey.name,
+    KIT_PRODUCTS.magGlycinate.name,
+    KIT_PRODUCTS.coralCalcium.name,
+    KIT_PRODUCTS.potassiumBicarb.name,
+    KIT_PRODUCTS.traceMinerals.name,
+  ]);
   const foodOptions = [
-    ...new Set(shortfalls.flatMap((s) => s.suggestions).slice(0, 24)),
+    ...new Set(
+      shortfalls
+        .flatMap((s) => s.suggestions)
+        .filter((s) => ![...stackNames].some((n) => s.includes(n) || s.startsWith("Increased whey")))
+        .slice(0, 16),
+    ),
   ];
 
   const shoppingList = alt
@@ -860,20 +869,19 @@ export function buildDetailedFoodPlan(
 
   const prepTips = alt
     ? [
-        "Shortfall stack: increased whey + regenerative eggs + organic Greek yogurt + coral calcium + Mg glycinate + potassium bicarbonate + trace mineral drops.",
-        `Mix ~${wheyScoops} whey scoop(s)/day in the Strada; eat ${SHORTFALL_STAPLES.eggs.portion} eggs and ${SHORTFALL_STAPLES.greekYogurt.portion} yogurt.`,
+        `Mix ~${wheyScoops} whey scoop(s)/day; eat ${SHORTFALL_STAPLES.eggs.portion} eggs (~${SHORTFALL_STAPLES.eggs.cholineMg} mg choline) and ${SHORTFALL_STAPLES.greekYogurt.portion} yogurt.`,
         shortfalls.length
-          ? `After the stack, ${shortfalls.length} shortfall(s) may remain — see table.`
+          ? `After the stack, ${shortfalls.length} shortfall${shortfalls.length === 1 ? "" : "s"} may remain — see table.`
           : "Educational model: stack covers primary protein/AA/micro targets — confirm labels.",
         "Potassium bicarbonate: labeled amounts only; kidney disease or potassium-sparing meds → clinician first.",
-        "Vitamin D3: stop immediately if overload symptoms appear.",
+        VITAMIN_D_OVERLOAD_SHORT,
       ]
     : [
         "Batch-cook protein (chicken/fish) twice a week; portion into lunch boxes.",
         `Mix whey in the Strada (${KIT_PRODUCTS.shaker.name}) — confirm scoop size on your bag.`,
         "Take ADAM or EVE with breakfast — do not combine both.",
         "Take kit Vitamin D3 with a meal that has some fat; confirm frequency with a clinician for 10,000 IU softgels.",
-        "Stop Vitamin D3 if overload symptoms appear and seek care.",
+        VITAMIN_D_OVERLOAD_SHORT,
         "Keep added sugars low; lean on fruit, whole grains, and vegetables for carbs.",
       ];
 
@@ -882,21 +890,21 @@ export function buildDetailedFoodPlan(
 
   return {
     disclaimer: alt
-      ? `Alternative shortfall-stack plan: increased whey + regenerative eggs + organic Greek yogurt + mineral add-ons with NOW multi/D3. Educational only. ${VITAMIN_D_OVERLOAD_NOTICE}`
-      : `${FOOD_PLAN_DISCLAIMER} ${VITAMIN_D_OVERLOAD_NOTICE}`,
+      ? `Alternative shortfall-stack plan: increased whey + eggs + yogurt + mineral add-ons with NOW multi/D3. Educational only. ${VITAMIN_D_OVERLOAD_SHORT}`
+      : `${FOOD_PLAN_DISCLAIMER} ${VITAMIN_D_OVERLOAD_SHORT}`,
     title: alt
       ? "Alternative shortfall stack (whey · eggs · yogurt · Ca · K · Mg · traces)"
       : "Detailed itemized food plan (CDC-style · kit-based)",
     summary: alt
-      ? `Stack: ~${wheyScoops} whey scoop(s) + eggs + yogurt ≈ ${stackProteinG}g protein toward ~${proteinTarget}g; coral calcium + Mg glycinate + potassium bicarbonate + trace minerals for mineral gaps. ${
+      ? `Stack: ~${wheyScoops} whey scoop(s) + ${SHORTFALL_STAPLES.eggs.portion} eggs + yogurt ≈ ${stackProteinG}g protein toward ~${proteinTarget}g; minerals via coral calcium · Mg · K bicarbonate · trace drops. ${
           shortfalls.length
-            ? `${shortfalls.length} nutrient(s) still short — see evaluation.`
+            ? `${shortfalls.length} nutrient${shortfalls.length === 1 ? "" : "s"} still short — see evaluation.`
             : "Modeled primary targets covered (verify labels)."
         }${
           targets.fatStores?.excessLb
-            ? ` ${targets.fatStores.reservesLine}`
+            ? ` ${targets.fatStores.reservesShort}.`
             : ""
-        } No calorie target on Alternative.`
+        } No calorie target.`
       : `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s), ${sex === "female" ? "EVE" : "ADAM"}, and Vitamin D3.`,
     style: alt ? "alternative" : "cdc",
     kitBase: {
@@ -907,7 +915,7 @@ export function buildDetailedFoodPlan(
       wheyFatG,
       multi: multiName,
       multiUrl,
-      d3Note: `NOW D3 10,000 IU is included in the plan with a meal that has fat. ${VITAMIN_D_OVERLOAD_NOTICE}`,
+      d3Note: `NOW D3 10,000 IU included with a meal that has fat. ${VITAMIN_D_OVERLOAD_SHORT}`,
       shakerNote: `Use ${KIT_PRODUCTS.shaker.name} for whey and fluid blocks.`,
     },
     kitMacroGaps,
@@ -935,14 +943,18 @@ export function buildDetailedFoodPlan(
           note: "Success = protein + amino acids + vitamins + minerals from kit (incl. D3), then foods that close shortfalls. No calorie target.",
           proteinHitPct,
           aminoAcidHitPct: aaHitPct,
-          vitaminNote:
-            shortfalls.filter((s) => s.category === "vitamin").length > 0
-              ? `${shortfalls.filter((s) => s.category === "vitamin").length} vitamin shortfall(s) — see options.`
-              : "Vitamins largely covered by NOW multi + D3 on this model.",
-          mineralNote:
-            shortfalls.filter((s) => s.category === "mineral").length > 0
-              ? `${shortfalls.filter((s) => s.category === "mineral").length} mineral shortfall(s) — see options.`
-              : "Minerals largely covered by NOW multi on this model (K/Mg often still need food).",
+          vitaminNote: (() => {
+            const n = shortfalls.filter((s) => s.category === "vitamin").length;
+            return n > 0
+              ? `${n} vitamin shortfall${n === 1 ? "" : "s"} — see options.`
+              : "Vitamins largely covered by NOW multi + D3 + egg stack on this model.";
+          })(),
+          mineralNote: (() => {
+            const n = shortfalls.filter((s) => s.category === "mineral").length;
+            return n > 0
+              ? `${n} mineral shortfall${n === 1 ? "" : "s"} — see options.`
+              : "Minerals largely covered by multi + Ca/Mg/K/trace stack on this model.";
+          })(),
           carbsFatNote: "Carbs/fat are not Alternative targets. No calorie target.",
         }
       : {

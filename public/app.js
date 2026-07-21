@@ -82,34 +82,13 @@ function fillKitBundles(bundles) {
     summary.className = "muted";
     summary.textContent = `${b.summary} · ${b.asins?.length || b.products?.length || 0} items`;
 
-    const thumbs = document.createElement("div");
-    thumbs.className = "product-thumbs";
-    for (const p of b.products || []) {
-      if (!p.imageUrl) continue;
-      const a = document.createElement("a");
-      a.href = p.url;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer sponsored";
-      a.title = p.name;
-      const img = document.createElement("img");
-      img.src = p.imageUrl;
-      img.alt = p.name;
-      img.loading = "lazy";
-      img.width = 72;
-      img.height = 72;
-      a.appendChild(img);
-      thumbs.appendChild(a);
-    }
-
     const link = document.createElement("a");
     link.className = "btn btn-primary";
     link.href = b.cartUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer sponsored";
     link.textContent = "Add all to Amazon cart";
-    row.append(title, summary);
-    if (thumbs.childElementCount) row.appendChild(thumbs);
-    row.appendChild(link);
+    row.append(title, summary, link);
     wrap.appendChild(row);
   }
 }
@@ -193,7 +172,6 @@ function fillNutritionKit(kit, disclaimer) {
   }
   fillList(document.getElementById("out-kit-schedule"), kit.schedule || []);
   fillList(document.getElementById("out-kit-sample"), kit.sampleDay || []);
-  fillList(document.getElementById("out-kit-gaps"), kit.gaps || []);
 
   const d3Wrap = document.getElementById("out-kit-d3-wrap");
   const d3Notice = document.getElementById("out-kit-d3-notice");
@@ -208,90 +186,6 @@ function fillNutritionKit(kit, disclaimer) {
 
   document.getElementById("out-kit-disclaimer").textContent =
     kit.disclaimer || disclaimer || "";
-}
-
-function coverageStatusLabel(status) {
-  if (status === "on_track") return "Met";
-  if (status === "multi_helps") return "Multi helps";
-  if (status === "food_focus") return "Food focus";
-  return "Shortfall";
-}
-
-function dominantNote(rows) {
-  const counts = new Map();
-  for (const row of rows || []) {
-    const key = (row.fromMulti || "").trim();
-    if (!key || key === "—" || key === "none") continue;
-    counts.set(key, (counts.get(key) || 0) + 1);
-  }
-  let best = null;
-  let bestN = 0;
-  for (const [k, n] of counts) {
-    if (n > bestN) {
-      best = k;
-      bestN = n;
-    }
-  }
-  if (!best || bestN < Math.max(2, Math.ceil((rows || []).length * 0.4))) return null;
-  return best;
-}
-
-function fillCoverageTable(tableId, rows) {
-  const tbody = document.querySelector(`#${tableId} tbody`);
-  const noteEl = document.getElementById(`${tableId}-note`);
-  if (!tbody) return;
-  tbody.innerHTML = "";
-
-  const list = rows || [];
-  const shared = dominantNote(list);
-  if (noteEl) {
-    if (shared) {
-      noteEl.hidden = false;
-      noteEl.textContent = `Main source: ${shared}`;
-    } else {
-      noteEl.hidden = true;
-      noteEl.textContent = "";
-    }
-  }
-
-  const allMet = list.length > 0 && list.every((r) => r.status === "on_track");
-  if (allMet && shared) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="3"><strong>All listed nutrients met</strong> via the main source above.</td>`;
-    tbody.appendChild(tr);
-    return;
-  }
-
-  // Prefer showing shortfalls / exceptions first; collapse fully-met rows when most share one source
-  const showRows =
-    shared && list.filter((r) => r.status === "on_track" && (r.fromMulti || "").trim() === shared).length >= 3
-      ? list.filter(
-          (r) =>
-            r.status !== "on_track" ||
-            (r.fromMulti || "").trim() !== shared,
-        )
-      : list;
-
-  if (shared && showRows.length < list.length) {
-    const metN = list.length - showRows.length;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="3" class="muted">${metN} other nutrient(s) met via the main source above.</td>`;
-    tbody.appendChild(tr);
-  }
-
-  for (const row of showRows.length ? showRows : list) {
-    const tr = document.createElement("tr");
-    const unit = row.unit || "";
-    const coverage = `${row.fromPlan} / ${row.target} ${unit}`.trim();
-    const exception =
-      shared && (row.fromMulti || "").trim() && (row.fromMulti || "").trim() !== shared
-        ? ` · ${row.fromMulti}`
-        : !shared && row.fromMulti
-          ? ` · ${row.fromMulti}`
-          : "";
-    tr.innerHTML = `<td>${row.name}</td><td>${coverage}${exception}</td><td>${coverageStatusLabel(row.status)}</td>`;
-    tbody.appendChild(tr);
-  }
 }
 
 function fillFoodPlan(fp, disclaimer) {
@@ -340,8 +234,6 @@ function fillFoodPlan(fp, disclaimer) {
       `Targets ${fp.targets.carbsG}g carbs · ${fp.targets.fatG}g fat · fiber ${fp.targets.fiberG}g`;
   }
 
-  fillList(document.getElementById("out-food-kit-gaps"), fp.kitGapSummary || []);
-
   const evalWrap = document.getElementById("out-food-stack-eval-wrap");
   if (evalWrap) {
     if (altFood && (fp.shortfallStackEvaluation || []).length) {
@@ -389,21 +281,29 @@ function fillFoodPlan(fp, disclaimer) {
 
   const itemHead = document.getElementById("out-food-itemized-head");
   const itemBody = document.querySelector("#out-food-itemized tbody");
-  if (itemHead) {
-    itemHead.innerHTML = altFood
-      ? "<tr><th>#</th><th>Block</th><th>Kit item</th><th>Portion</th><th>Protein</th><th>Source</th></tr>"
-      : "<tr><th>#</th><th>Meal</th><th>Food</th><th>Portion</th><th>kcal</th><th>P</th><th>C</th><th>F</th><th>Source</th></tr>";
-  }
-  if (itemBody) {
-    itemBody.innerHTML = "";
-    for (const row of fp.itemized || []) {
-      const tr = document.createElement("tr");
-      if (altFood) {
-        tr.innerHTML = `<td>${row.line}</td><td>${row.meal}</td><td>${row.food}</td><td>${row.portion}</td><td>${row.proteinG}g</td><td>${row.source}</td>`;
-      } else {
+  const itemizedTitle = document.getElementById("out-food-itemized-title");
+  const itemizedWrap = itemBody?.closest(".table-wrap") || itemBody?.parentElement;
+  if (altFood) {
+    // Avoid duplicating the same stack as both itemized rows and meal blocks
+    if (itemizedTitle) itemizedTitle.hidden = true;
+    if (itemizedWrap) itemizedWrap.hidden = true;
+  } else {
+    if (itemizedTitle) {
+      itemizedTitle.hidden = false;
+      itemizedTitle.textContent = "Itemized day plan (every food)";
+    }
+    if (itemizedWrap) itemizedWrap.hidden = false;
+    if (itemHead) {
+      itemHead.innerHTML =
+        "<tr><th>#</th><th>Meal</th><th>Food</th><th>Portion</th><th>kcal</th><th>P</th><th>C</th><th>F</th><th>Source</th></tr>";
+    }
+    if (itemBody) {
+      itemBody.innerHTML = "";
+      for (const row of fp.itemized || []) {
+        const tr = document.createElement("tr");
         tr.innerHTML = `<td>${row.line}</td><td>${row.meal}</td><td>${row.food}</td><td>${row.portion}</td><td>${row.kcal}</td><td>${row.proteinG}</td><td>${row.carbsG}</td><td>${row.fatG}</td><td>${row.source}</td>`;
+        itemBody.appendChild(tr);
       }
-      itemBody.appendChild(tr);
     }
   }
 
@@ -437,12 +337,6 @@ function fillFoodPlan(fp, disclaimer) {
     mealsEl.appendChild(block);
   }
 
-  const itemizedTitle = document.getElementById("out-food-itemized-title");
-  if (itemizedTitle) {
-    itemizedTitle.textContent = altFood
-      ? "Shortfall stack (kit + eggs/yogurt + minerals)"
-      : "Itemized day plan (every food)";
-  }
   const mealsTitle = document.getElementById("out-food-meals-title");
   if (mealsTitle) {
     mealsTitle.textContent = altFood ? "Stack blocks" : "Meals (grouped)";
@@ -454,22 +348,26 @@ function fillFoodPlan(fp, disclaimer) {
       : "Shopping list";
   }
 
-  fillCoverageTable("out-food-vit", fp.vitamins);
-  fillCoverageTable("out-food-min", fp.minerals);
-  fillCoverageTable("out-food-aa", fp.aminoAcids);
   fillList(document.getElementById("out-food-shop"), fp.shoppingList || []);
   fillList(document.getElementById("out-food-tips"), fp.prepTips || []);
 
   const foodD3Wrap = document.getElementById("out-food-d3-wrap");
   const foodD3Notice = document.getElementById("out-food-d3-notice");
   const foodD3Symptoms = document.getElementById("out-food-d3-symptoms");
+  const kitD3Wrap = document.getElementById("out-kit-d3-wrap");
+  const kitD3AlreadyShown = kitD3Wrap && !kitD3Wrap.hidden;
   if (foodD3Wrap && foodD3Notice && foodD3Symptoms) {
-    foodD3Wrap.hidden = false;
-    foodD3Notice.textContent =
-      fp.vitaminDOverloadNotice ||
-      fp.kitBase?.d3Note ||
-      "Stop Vitamin D3 and seek care if overload symptoms appear.";
-    fillList(foodD3Symptoms, fp.vitaminDOverloadSymptoms || []);
+    if (kitD3AlreadyShown) {
+      // Full D3 safety list already shown under Nutrition Kit — skip duplicate
+      foodD3Wrap.hidden = true;
+    } else {
+      foodD3Wrap.hidden = false;
+      foodD3Notice.textContent =
+        fp.vitaminDOverloadNotice ||
+        fp.kitBase?.d3Note ||
+        "Stop Vitamin D3 and seek care if overload signs appear.";
+      fillList(foodD3Symptoms, fp.vitaminDOverloadSymptoms || []);
+    }
   }
 
   document.getElementById("out-food-disclaimer").textContent =
@@ -483,14 +381,6 @@ function fillProgress(wp, disclaimer) {
     return;
   }
   wrap.hidden = false;
-  const altNote = document.getElementById("out-progress-alt-note");
-  if (altNote) {
-    const isAlt =
-      (wp.pace?.note || "").toLowerCase().includes("alternative") ||
-      (wp.pace?.note || "").toLowerCase().includes("fat-store") ||
-      (wp.pace?.note || "").toLowerCase().includes("fat store");
-    altNote.hidden = !isAlt;
-  }
   document.getElementById("out-progress-summary").textContent =
     wp.toHealthyBmi?.summary || "";
   document.getElementById("out-progress-now").textContent =
@@ -500,17 +390,20 @@ function fillProgress(wp, disclaimer) {
   document.getElementById("out-progress-pace").textContent =
     `~${wp.pace.weeklyLossLb} lb/wk`;
   document.getElementById("out-progress-pace-detail").textContent =
-    `~${wp.pace.monthlyLossLb} lb/mo · deficit ~${wp.plan.dailyDeficitKcal} kcal/day · ${wp.pace.note}`;
+    `~${wp.pace.monthlyLossLb} lb/mo · ${wp.pace.note}`;
   document.getElementById("out-progress-goal").textContent =
     wp.toHealthyBmi.estimatedWeeks != null
       ? `~${wp.toHealthyBmi.estimatedWeeks} wks`
       : "—";
+  const goalBadge = document.getElementById("out-progress-goal-badge");
+  if (goalBadge) {
+    goalBadge.textContent = `To ideal ~${wp.toHealthyBmi.targetWeightLb} lb`;
+  }
   document.getElementById("out-progress-goal-detail").textContent =
-    `${wp.toHealthyBmi.poundsToGo} lb to go · target ~${wp.toHealthyBmi.targetWeightLb} lb`;
+    `${wp.toHealthyBmi.poundsToGo} lb to go · BMI ${wp.toHealthyBmi.targetBmi}`;
 
   const miles = (wp.milestones || []).map(
-    (m) =>
-      `Week ${m.weeks}: ~${m.weightLb} lb (BMI ${m.bmi}) · lost ~${m.lostLb} lb`,
+    (m) => `Week ${m.weeks}: ~${m.weightLb} lb · −${m.lostLb} lb`,
   );
   fillList(document.getElementById("out-progress-milestones"), miles);
   document.getElementById("out-progress-hint").textContent =
@@ -521,11 +414,7 @@ function fillProgress(wp, disclaimer) {
   const calSel = document.getElementById("adj-calories");
   const exSel = document.getElementById("adj-exercise");
   const calLabel = document.getElementById("adj-calories-label");
-  const isAltForecast =
-    (wp.pace?.note || "").toLowerCase().includes("alternative") ||
-    (wp.pace?.note || "").toLowerCase().includes("fat-store") ||
-    (wp.pace?.note || "").toLowerCase().includes("fat store") ||
-    (wp.pace?.note || "").toLowerCase().includes("reserves");
+  const isAltForecast = Boolean(wp.alternative);
   if (calLabel) {
     if (isAltForecast) {
       calLabel.hidden = true;
@@ -571,34 +460,31 @@ function renderAdviceResult(data) {
     lifeWrap.hidden = false;
     document.getElementById("out-life-summary").textContent = le.comparison?.summary || "";
     document.getElementById("out-life-current").textContent =
-      `~${le.current.expectedAge} yrs expected age`;
+      `~${le.current.expectedAge} yrs`;
     document.getElementById("out-life-current-detail").textContent =
-      `~${le.current.remainingYears} years remaining · BMI ${le.current.bmi ?? "—"} · adj ${le.current.adjustmentsYears >= 0 ? "+" : ""}${le.current.adjustmentsYears} yrs`;
+      `~${le.current.remainingYears} yrs left · BMI ${le.current.bmi ?? "—"} · adj ${le.current.adjustmentsYears >= 0 ? "+" : ""}${le.current.adjustmentsYears}`;
     document.getElementById("out-life-ideal").textContent =
-      `~${le.ideal.expectedAge} yrs expected age`;
-    document.getElementById("out-life-ideal-detail").textContent =
-      `~${le.ideal.remainingYears} years remaining · BMI ${le.ideal.bmi}` +
-      (le.ideal.idealWeightLb ? ` (~${le.ideal.idealWeightLb} lbs at your height)` : "");
-    fillList(document.getElementById("out-life-assumptions"), le.ideal.assumptions || []);
+      `~${le.ideal.expectedAge} yrs`;
+    const idealBits = [
+      `~${le.ideal.remainingYears} yrs left`,
+      ...(le.ideal.assumptions || []),
+    ].filter(Boolean);
+    document.getElementById("out-life-ideal-detail").textContent = idealBits.join(" · ");
     document.getElementById("out-life-disclaimer").textContent =
       le.disclaimer || data.lifeExpectancyDisclaimer || "";
   } else {
     lifeWrap.hidden = true;
   }
 
-  const actionsWrap = document.getElementById("out-actions-wrap");
-  if (data.actions?.length) {
-    actionsWrap.hidden = false;
-    fillList(document.getElementById("out-actions"), data.actions);
-  } else {
-    actionsWrap.hidden = true;
-  }
-  fillList(document.getElementById("out-watchouts"), data.watchouts);
-  fillList(document.getElementById("out-care"), data.whenToSeekCare);
-  document.getElementById("out-disclaimer").textContent = data.disclaimer;
-  document.getElementById("out-lens-disclaimer").textContent =
-    data.lensDisclaimer || "";
-}
+  fillList(document.getElementById("out-safety"), [
+    ...(data.watchouts || []),
+    ...(data.whenToSeekCare || []),
+  ]);
+  const safetyFoot = document.getElementById("out-safety-footnote");
+  if (safetyFoot) {
+    const parts = [data.disclaimer, data.lensDisclaimer].filter(Boolean);
+    safetyFoot.textContent = parts.join(" ");
+  }}
 
 async function boot() {
   const form = document.getElementById("metrics-form");
@@ -607,8 +493,43 @@ async function boot() {
   const upsell = document.getElementById("plus-upsell");
   const portalBtn = document.getElementById("portal-btn");
   const errorEl = document.getElementById("form-error");
+  const statusEl = document.getElementById("form-status");
   const result = document.getElementById("result");
   let lastPayload = null;
+
+  function setFormStatus(message, { isError = false } = {}) {
+    if (statusEl) {
+      if (message && !isError) {
+        statusEl.hidden = false;
+        statusEl.textContent = message;
+      } else {
+        statusEl.hidden = true;
+        statusEl.textContent = "";
+      }
+    }
+    if (errorEl) {
+      if (message && isError) {
+        errorEl.hidden = false;
+        errorEl.textContent = message;
+      } else if (!isError) {
+        errorEl.hidden = true;
+        errorEl.textContent = "";
+      }
+    }
+  }
+
+  function focusFirstInvalid() {
+    const first = form.querySelector(":invalid");
+    if (!first) return;
+    const details = first.closest("details");
+    if (details) details.open = true;
+    first.scrollIntoView({ behavior: "smooth", block: "center" });
+    try {
+      first.focus({ preventScroll: true });
+    } catch {
+      first.focus();
+    }
+  }
 
   const params = new URLSearchParams(location.search);
   const sessionId = params.get("session_id");
@@ -706,22 +627,38 @@ async function boot() {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    errorEl.hidden = true;
+    setFormStatus("");
     result.hidden = true;
+
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      focusFirstInvalid();
+      setFormStatus(
+        "Please fill required fields: age, height (ft + in), weight, activity, and goal.",
+        { isError: true },
+      );
+      return;
+    }
+
     const payload = buildPayloadFromForm();
     const btn = document.getElementById("submit-btn");
     btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
     btn.textContent = "Working…";
+    setFormStatus("Generating your 7-day plan…");
     try {
       await runAdvice(payload);
+      setFormStatus("Plan ready — scrolled to your results.");
     } catch (err) {
-      errorEl.hidden = false;
-      errorEl.textContent = err.message;
+      setFormStatus(err.message || "Could not generate plan.", { isError: true });
       if (err.data?.upgrade) {
+        errorEl.hidden = false;
         errorEl.innerHTML = `${err.message} <a href="/pricing.html">Upgrade to Plus</a>`;
       }
+      errorEl.scrollIntoView({ behavior: "smooth", block: "center" });
     } finally {
       btn.disabled = false;
+      btn.removeAttribute("aria-busy");
       btn.textContent = "Get my 7-day plan";
     }
   });
@@ -754,7 +691,7 @@ async function boot() {
         alert(err.message || "Could not update forecast");
       } finally {
         updateBtn.disabled = false;
-        updateBtn.textContent = "Update forecast & food plan";
+        updateBtn.textContent = "Update forecast";
       }
     });
   }

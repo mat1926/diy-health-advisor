@@ -2,7 +2,7 @@ import { resolvePerspective, type PerspectiveId } from "./perspectives";
 
 export type PlanId = "free" | "plus";
 
-export const MEDICAL_DISCLAIMER = `VitalGauge provides general wellness information for educational and DIY self-tracking purposes only. It is not medical advice, diagnosis, or treatment, and it is not a substitute for professional care from a licensed clinician. VitalGauge is intended for adults only — it is not designed for children or other non-adults, people who are pregnant or breastfeeding, or older adults / the elderly; those groups should use clinician-guided care instead of this tool. Do not use this tool for emergencies. If you think you may be having a medical emergency, call your local emergency number. Always talk with a qualified healthcare professional before changing diet, exercise, medication, or treatment.`;
+export const MEDICAL_DISCLAIMER = `Educational DIY wellness info for adults only — not medical advice, diagnosis, or treatment, and not for children, pregnancy/breastfeeding, or the elderly. Emergencies: call your local emergency number. Talk with a licensed clinician before changing diet, exercise, medication, or treatment.`;
 
 export const FREE_FIELDS = [
   "age",

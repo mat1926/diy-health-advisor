@@ -20,6 +20,10 @@ export const VITAMIN_D_OVERLOAD_SYMPTOMS = [
 
 export const VITAMIN_D_OVERLOAD_NOTICE = `Stop the Vitamin D3 supplement immediately and contact a clinician (or emergency care if severe) if you notice signs of vitamin D overload / excess, which are usually linked to high blood calcium. Common warning symptoms: ${VITAMIN_D_OVERLOAD_SYMPTOMS.slice(0, -1).join("; ")}. ${VITAMIN_D_OVERLOAD_SYMPTOMS[VITAMIN_D_OVERLOAD_SYMPTOMS.length - 1]}. Do not restart high-dose D3 without clinician guidance and labs. You cannot get vitamin D overload from normal sun exposure alone.`;
 
+/** One-line pointer — full symptom list lives in the Vitamin D3 safety section. */
+export const VITAMIN_D_OVERLOAD_SHORT =
+  "Stop D3 immediately if overload signs appear — see the Vitamin D3 safety list in this plan.";
+
 export type KitProduct = {
   asin: string;
   name: string;
@@ -103,7 +107,7 @@ export const KIT_PRODUCTS = {
   },
   traceMinerals: {
     asin: "B000AMUWLK",
-    name: "Trace Minerals drops (8 fl oz, 70+ minerals)",
+    name: "Trace ConcenTrace Trace Mineral Drops (8 fl oz)",
     url: "https://www.amazon.com/dp/B000AMUWLK",
     role: "Support magnesium, potassium, and trace-mineral shortfalls",
   },
@@ -121,18 +125,29 @@ export const KIT_PRODUCTS = {
   },
 } as const satisfies Record<string, KitProduct>;
 
-/** Staple foods used with the kit to close Alternative shortfalls (not a full menu). */
+/**
+ * Staple foods used with the kit to close Alternative shortfalls (not a full menu).
+ * Eggs: ~147 mg choline/large egg (USDA). 4 large ≈ 588 mg covers male 550 mg and female 425 mg educational targets.
+ */
 export const SHORTFALL_STAPLES = {
   eggs: {
-    name: "Organic regenerative eggs",
-    portion: "3 large",
-    proteinG: 18,
-    role: "Protein, choline, B12, selenium, and amino acids",
+    asin: "B09R9Q47LJ",
+    name: "New Barn Organics Regenerative Organic Pasture Raised Eggs (12 ct)",
+    url: "https://www.amazon.com/Organic-Large-Pasture-Raised-Count/dp/B09R9Q47LJ",
+    count: 4,
+    portion: "4 large",
+    proteinG: 24,
+    cholineMg: 588,
+    kcal: 280,
+    fatG: 20,
+    role: "Protein, choline (covers educational target), B12, selenium, and amino acids",
   },
   greekYogurt: {
-    name: "Organic Greek yogurt (plain)",
-    portion: "1 cup",
-    proteinG: 20,
+    asin: "B01NBBVPLI",
+    name: "Stonyfield Organic Greek Whole Milk Yogurt Plain (30 oz)",
+    url: "https://www.amazon.com/Stonyfield-Whole-Greek-Yogurt-Plain/dp/B01NBBVPLI",
+    portion: "1 cup (~170 g label serving)",
+    proteinG: 16,
     role: "Protein, calcium, potassium support, and amino acids",
   },
 } as const;
@@ -161,7 +176,6 @@ export type NutritionKitPlan = {
   illustrationUrl: string;
   schedule: string[];
   sampleDay: string[];
-  gaps: string[];
 };
 
 export function buildNutritionKitPlan(
@@ -194,7 +208,7 @@ export function buildNutritionKitPlan(
     {
       ...KIT_PRODUCTS.whey,
       howToUse: altKit
-        ? `Increased whey: about ${wheyScoops} scoop(s)/day (~${proteinFromWheyG}g) plus organic regenerative eggs (${SHORTFALL_STAPLES.eggs.portion}) and organic Greek yogurt (${SHORTFALL_STAPLES.greekYogurt.portion}) to close protein/AA shortfalls toward ~${proteinTargetG}g.`
+        ? `Increased whey: about ${wheyScoops} scoop(s)/day (~${proteinFromWheyG}g) plus ${SHORTFALL_STAPLES.eggs.name} (${SHORTFALL_STAPLES.eggs.portion}) and ${SHORTFALL_STAPLES.greekYogurt.name} (${SHORTFALL_STAPLES.greekYogurt.portion}) toward ~${proteinTargetG}g protein.`
         : wheyScoops === 0
           ? `Food may already cover ~${proteinTargetG}g protein — keep whey optional for busy days.`
           : `Mix about ${wheyScoops} scoop(s)/day (~${proteinFromWheyG}g protein) in the Strada to help reach ~${proteinTargetG}g total. Confirm scoop grams on your bag label.`,
@@ -235,8 +249,8 @@ export function buildNutritionKitPlan(
 
   products.push({
     ...KIT_PRODUCTS.d3,
-    howToUse: `Included in this plan as the kit Vitamin D supplement (NOW D3 10,000 IU). Educational app D target is often ~${dTarget} IU/day — this softgel is much stronger, so prefer clinician/lab guidance on frequency (e.g. not casually stacking with other D sources). Take with a meal that has some fat.`,
-    caution: VITAMIN_D_OVERLOAD_NOTICE,
+    howToUse: `Included in this plan as the kit Vitamin D supplement (NOW D3 10,000 IU). Educational app D target is often ~${dTarget} IU/day — this softgel is much stronger, so prefer clinician/lab guidance on frequency. Take with a meal that has some fat.`,
+    caution: VITAMIN_D_OVERLOAD_SHORT,
   });
 
   products.push({
@@ -269,18 +283,18 @@ export function buildNutritionKitPlan(
 
   if (altKit) {
     products.push({
-      asin: "food-eggs",
+      asin: SHORTFALL_STAPLES.eggs.asin,
       name: SHORTFALL_STAPLES.eggs.name,
-      url: "https://www.amazon.com/s?k=organic+regenerative+eggs",
+      url: SHORTFALL_STAPLES.eggs.url,
       role: SHORTFALL_STAPLES.eggs.role,
-      howToUse: `${SHORTFALL_STAPLES.eggs.portion}/day — choline, complete protein, B12/selenium support.`,
+      howToUse: `${SHORTFALL_STAPLES.eggs.portion}/day (~${SHORTFALL_STAPLES.eggs.cholineMg} mg choline) — covers educational choline target; complete protein, B12/selenium.`,
     });
     products.push({
-      asin: "food-yogurt",
+      asin: SHORTFALL_STAPLES.greekYogurt.asin,
       name: SHORTFALL_STAPLES.greekYogurt.name,
-      url: "https://www.amazon.com/s?k=organic+greek+yogurt+plain",
+      url: SHORTFALL_STAPLES.greekYogurt.url,
       role: SHORTFALL_STAPLES.greekYogurt.role,
-      howToUse: `${SHORTFALL_STAPLES.greekYogurt.portion}/day — protein + calcium/potassium support.`,
+      howToUse: `${SHORTFALL_STAPLES.greekYogurt.portion}/day — protein + calcium/potassium support (~16g protein/serving).`,
     });
     products.push({
       ...KIT_PRODUCTS.potassiumBicarb,
@@ -312,7 +326,7 @@ export function buildNutritionKitPlan(
     "Vitamin D3 (kit): take with a meal that includes some fat — follow clinician guidance on how often for this 10,000 IU potency.",
     ...(altKit
       ? [
-          `Shortfall stack: ${SHORTFALL_STAPLES.eggs.portion} regenerative eggs · ${SHORTFALL_STAPLES.greekYogurt.portion} organic Greek yogurt · Mg glycinate · coral calcium · K bicarbonate · trace minerals.`,
+          `Shortfall stack: ${SHORTFALL_STAPLES.eggs.portion} eggs · ${SHORTFALL_STAPLES.greekYogurt.portion} yogurt · Mg · coral calcium · K bicarbonate · trace minerals.`,
         ]
       : []),
     "Optional: saliva pH strip mid-morning → log in VitalGauge.",
@@ -322,7 +336,7 @@ export function buildNutritionKitPlan(
       : "Protein: prioritize food first; keep whey optional.",
     `Fluids: work toward ~${waterLiters} L/day using the Strada among other drinks.`,
     "1–2×/week: RENPHO BP seated (+ standing if checking orthostatic) and resting pulse → log vitals.",
-    "If vitamin D overload symptoms appear: stop D3 immediately and contact a clinician.",
+    "If vitamin D overload symptoms appear: stop D3 immediately — see Vitamin D3 safety list.",
     altKit
       ? "Evening: finish protein/micros priorities (no calorie target on Alternative)."
       : "Evening: finish remaining food protein/carbs/fat toward calorie & macro targets from the app.",
@@ -354,12 +368,6 @@ export function buildNutritionKitPlan(
     sampleDay.push("Set sex in the form for a cleaner ADAM vs EVE recommendation next run.");
   }
 
-  const gaps = [
-    "Carbs, fat, sodium, and potassium still come mostly from food.",
-    "Kit D3 10,000 IU exceeds typical educational IU targets — labs/clinician timing preferred; stop if overload symptoms occur.",
-    "Supplements and home devices are not a substitute for clinical care or bloodwork.",
-  ];
-
   return {
     disclaimer: NUTRITION_KIT_DISCLAIMER,
     title: "Nutrition Kit plan (whey · multi · D3 · pH · Multistix · RENPHO BP · scale)",
@@ -384,6 +392,5 @@ export function buildNutritionKitPlan(
     })),
     schedule,
     sampleDay,
-    gaps,
   };
 }
