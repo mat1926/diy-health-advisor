@@ -7,6 +7,8 @@ export type Env = {
   APP_URL: string;
   STRIPE_PRICE_PLUS: string;
   STRIPE_PUBLISHABLE_KEY: string;
+  /** Amazon Associates Store ID / tracking ID (e.g. yourstore-20). Public; not a secret. */
+  AMAZON_ASSOCIATE_TAG?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   OPENAI_API_KEY?: string;

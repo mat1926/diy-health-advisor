@@ -837,6 +837,7 @@ export function buildDetailedFoodPlan(
         KIT_PRODUCTS.magGlycinate.name,
         KIT_PRODUCTS.coralCalcium.name,
         KIT_PRODUCTS.phStrips.name,
+        KIT_PRODUCTS.multistix.name,
         KIT_PRODUCTS.renphoBp.name,
         KIT_PRODUCTS.renphoScale.name,
         ...(foodOptions.length && shortfalls.length

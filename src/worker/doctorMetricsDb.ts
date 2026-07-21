@@ -508,15 +508,107 @@ export type DoctorReviewCard = {
   rec: DoctorMetricRec;
 };
 
+/** One consolidated Alternative-blend summary per detected finding (themes merged). */
+export type DoctorFindingSummary = {
+  metricKey: MetricKey;
+  metricLabel: string;
+  findingDetail: string;
+  title: string;
+  summary: string;
+  actions: string[];
+  caution: string;
+};
+
 export type DoctorMetricReview = {
   disclaimer: string;
   findings: MetricFinding[];
-  /** All matched doctor×metric cards (filterable in UI). */
+  /** @deprecated Prefer `summaries` — kept for any older clients. */
   cards: DoctorReviewCard[];
+  /** One merged educational summary per finding (not per theme). */
+  summaries: DoctorFindingSummary[];
   /** Doctors available for review tabs. */
   doctors: DoctorProfile[];
   demoNote?: string;
 };
+
+/** Single-paragraph blend copy per metric (themes woven together). */
+const BLEND_SUMMARY_COPY: Record<MetricKey, string> = {
+  high_bp_seated:
+    "Prioritize clinician review of elevated home BP while you simplify meals (fewer refined carbs and packaged foods), keep electrolytes and potassium-rich produce thoughtful, walk daily with post-meal strolls, protect sleep, and downshift stress. Log seated BP consistently for your clinician — lifestyle themes are adjuncts only, not hypertension treatment.",
+  orthostatic_bp_drop:
+    "Treat a sizable seated→standing BP drop as a recovery signal: rise slowly, keep fluids and regular meals steady, pause aggressive fasting and hard intervals, and recheck with a consistent cuff protocol. Bring numbers and any dizziness notes to a clinician — DIY logging is not a diagnosis.",
+  low_saliva_ph:
+    "Treat lower DIY saliva pH as a curiosity signal, not a disease label. Favor protein-forward plates, fewer sugary snacks/drinks, steady hydration, oral hygiene basics, and stress/sleep support. Retest at a consistent time and skip alkaline cleanses or strip-driven mineral stacks.",
+  high_urine_ph:
+    "Use a higher urine pH strip as a log point next to hydration and diet — not an alkaline badge or infection rule-out. Keep fluids and whole foods steady, standardize Multistix timing if you retest, and seek care for pain, fever, or blood in urine. Do not self-treat infection from a pad alone.",
+  elevated_rhr:
+    "A high resting heart rate on home checks calls for quieter recovery: protect sleep, ease stacked stressors and hard training, keep caffeine modest, and log morning RHR with context for a clinician. Persistent elevation deserves clinical evaluation.",
+  overweight_bmi:
+    "Focus on protein-forward, whole-food plates with fewer refined carbs and packaged desserts; cook at home when you can. Build metabolic fitness with daily walking (including after meals), strength about twice weekly, and consistent sleep. Keep anti-inflammatory fats and a simple stress downshift in the mix. Track weekly weigh-ins, hydration, and pantry simplicity — aim for a modest deficit without crash diets or fad cleanses.",
+  short_sleep:
+    "Make sleep opportunity the priority before hard diet cuts or fasting experiments: fixed wake time, morning light, earlier wind-down, calmer evenings (less late sugar/alcohol/screens), and easier training until sleep recovers. Chronic short sleep also deserves clinical or mental-health context when needed.",
+  high_stress:
+    "Treat a high stress score as a cue to reduce stacked load: daily nervous-system downshift, protect sleep, simplify meals (protein + plants, fewer stimulants), and keep movement gentle. Stress tools are educational — crisis or safety concerns need real-world support, not DIY protocols alone.",
+};
+
+const BLEND_CAUTION_COPY: Record<MetricKey, string> = {
+  high_bp_seated:
+    "Home BP in a high range needs clinician confirmation; urgent symptoms need emergency care. Educational only — not a hypertension program.",
+  orthostatic_bp_drop:
+    "Dizziness, fainting, or chest symptoms on standing need prompt clinical care. DIY orthostatic checks are for logging only.",
+  low_saliva_ph:
+    "Saliva pH strips do not diagnose systemic acidosis or metabolic disease. Skip harsh cleanses and strip-driven supplement stacks.",
+  high_urine_ph:
+    "Painful urination, fever, or blood in urine need clinical care. Strip results are not a lab urinalysis or infection diagnosis.",
+  elevated_rhr:
+    "Sustained high resting HR deserves clinical evaluation. Educational recovery tips are not a cardiac diagnosis.",
+  overweight_bmi:
+    "Educational only — not a medical weight program. Environment and plate tweaks do not replace clinical obesity care when needed.",
+  short_sleep:
+    "Chronic short sleep may need clinical or mental-health context. These tips are not sedatives or prescriptions.",
+  high_stress:
+    "Educational stress habits are not therapy or crisis care. Seek real-world help if you feel unsafe or overwhelmed.",
+};
+
+function uniqueStrings(items: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of items) {
+    const key = item.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(item.trim());
+  }
+  return out;
+}
+
+function summarizeFinding(
+  finding: MetricFinding,
+  recs: DoctorMetricRec[],
+): DoctorFindingSummary {
+  const actions = uniqueStrings(recs.flatMap((r) => r.lifestyle)).slice(0, 8);
+  if (recs.length === 1) {
+    const rec = recs[0]!;
+    return {
+      metricKey: finding.metricKey,
+      metricLabel: finding.label,
+      findingDetail: finding.detail,
+      title: `${finding.label} — summary`,
+      summary: rec.recommendation,
+      actions: uniqueStrings(rec.lifestyle).slice(0, 8),
+      caution: rec.caution,
+    };
+  }
+  return {
+    metricKey: finding.metricKey,
+    metricLabel: finding.label,
+    findingDetail: finding.detail,
+    title: `${finding.label} — blend summary`,
+    summary: BLEND_SUMMARY_COPY[finding.metricKey],
+    actions,
+    caution: BLEND_CAUTION_COPY[finding.metricKey],
+  };
+}
 
 const METRIC_LABELS: Record<MetricKey, string> = {
   high_bp_seated: "High seated blood pressure",
@@ -639,12 +731,15 @@ export function buildDoctorMetricReview(
 
   const doctors = Object.values(DOCTORS);
   const cards: DoctorReviewCard[] = [];
+  const summaries: DoctorFindingSummary[] = [];
 
   for (const finding of findings) {
+    const recs: DoctorMetricRec[] = [];
     for (const doctor of doctors) {
       if (filterDoctorId && filterDoctorId !== "all" && doctor.id !== filterDoctorId) continue;
       const rec = recFor(doctor.id, finding.metricKey);
       if (!rec) continue;
+      recs.push(rec);
       cards.push({
         doctor,
         metricKey: finding.metricKey,
@@ -653,9 +748,10 @@ export function buildDoctorMetricReview(
         rec,
       });
     }
+    if (recs.length) summaries.push(summarizeFinding(finding, recs));
   }
 
-  if (cards.length === 0) return null;
+  if (summaries.length === 0) return null;
 
   const hasDemoTrio =
     findings.some((f) => f.metricKey === "high_bp_seated") &&
@@ -666,9 +762,10 @@ export function buildDoctorMetricReview(
     disclaimer: DOCTOR_DB_DISCLAIMER,
     findings,
     cards,
+    summaries,
     doctors,
     demoNote: hasDemoTrio
-      ? "Demo pattern detected: high seated BP + lower saliva pH + BP drop on standing. Theme cards below compare educational blend lenses."
+      ? "Demo pattern detected: high seated BP + lower saliva pH + BP drop on standing. Summaries below merge the Alternative blend into one note per finding."
       : undefined,
   };
 }

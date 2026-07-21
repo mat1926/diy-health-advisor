@@ -16,7 +16,7 @@
 | [B0013OVWWM](https://www.amazon.com/dp/B0013OVWWM) | NOW **ADAM** men’s multivitamin (120 tabs) | Daily **vitamins + minerals** for male adults |
 | [B000JN6MBO](https://www.amazon.com/dp/B000JN6MBO) | NOW **EVE** women’s multivitamin (180 tabs) | Daily **vitamins + minerals** for female adults (includes iron) |
 | [B01GFSEB00](https://www.amazon.com/dp/B01GFSEB00) | **pH strips** (saliva & urine) | DIY **saliva pH** (and optional urine pH) for demographics |
-| [B07WFTQ94B](https://www.amazon.com/dp/B07WFTQ94B) | **RENPHO** upper-arm **BP monitor** | Home **BP seated/standing** + pulse |
+| [B08J7XWM75](https://www.amazon.com/dp/B08J7XWM75) | **RENPHO** upper-arm **BP monitor** | Home **BP seated/standing** + pulse |
 | [B01N1UX8RW](https://www.amazon.com/dp/B01N1UX8RW) | **RENPHO** smart **body scale** | **Weight** (and optional composition) for progress |
 
 Pick **ADAM or EVE** by sex — not both unless a clinician directs.

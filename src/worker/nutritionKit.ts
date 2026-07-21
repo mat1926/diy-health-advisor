@@ -1,7 +1,8 @@
 import type { MetricsInput } from "./plans";
 import type { DetailedTargets } from "./targets";
+import { productImageUrl } from "./amazonAssociates";
 
-export const NUTRITION_KIT_DISCLAIMER = `This Nutrition Kit plan maps educational VitalGauge targets to specific retail products for DIY convenience. It is not medical advice, a prescription, or an FDA-evaluated protocol. Multivitamins and vitamin D do not replace food or lab-guided care. Home pH strips, BP cuffs, and smart scales are for self-tracking only — not diagnoses. Stop vitamin D and seek care if overload symptoms appear. Choose ADAM or EVE by sex — do not combine unless a clinician directs. Product labels override any summary here.`;
+export const NUTRITION_KIT_DISCLAIMER = `This Nutrition Kit plan maps educational VitalGauge targets to specific retail products for DIY convenience. It is not medical advice, a prescription, or an FDA-evaluated protocol. Multivitamins and vitamin D do not replace food or lab-guided care. Home pH strips, BP cuffs, smart scales, and personal ECG devices are for self-tracking only — not diagnoses. Stop vitamin D and seek care if overload symptoms appear. Choose ADAM or EVE by sex — do not combine unless a clinician directs. Product labels override any summary here.`;
 
 /** Educational safety notice for kit Vitamin D3 (NIH ODS–aligned symptom themes). */
 export const VITAMIN_D_OVERLOAD_SYMPTOMS = [
@@ -24,6 +25,7 @@ export type KitProduct = {
   name: string;
   url: string;
   role: string;
+  imageUrl?: string | null;
 };
 
 export const KIT_PRODUCTS = {
@@ -63,10 +65,16 @@ export const KIT_PRODUCTS = {
     url: "https://www.amazon.com/dp/B01GFSEB00",
     role: "Log DIY saliva pH (and optional urine pH) in VitalGauge",
   },
+  multistix: {
+    asin: "B06WCZVMLC",
+    name: "Siemens Multistix 10 SG urine test strips",
+    url: "https://www.amazon.com/dp/B06WCZVMLC",
+    role: "Log all 10 urine pads in VitalGauge demographics (educational DIY)",
+  },
   renphoBp: {
-    asin: "B07WFTQ94B",
+    asin: "B08J7XWM75",
     name: "RENPHO upper-arm blood pressure monitor",
-    url: "https://www.amazon.com/dp/B07WFTQ94B",
+    url: "https://www.amazon.com/Pressure-RENPHO-Wireless-Unlimited-Bluetooth/dp/B08J7XWM75",
     role: "Home BP seated + standing + pulse for VitalGauge vitals",
   },
   renphoScale: {
@@ -74,6 +82,18 @@ export const KIT_PRODUCTS = {
     name: "RENPHO smart body scale",
     url: "https://www.amazon.com/dp/B01N1UX8RW",
     role: "Track weight (and optional body metrics) for demographics & progress",
+  },
+  morphoScanScale: {
+    asin: "B0FJFL8KP4",
+    name: "RENPHO MorphoScan Nova body composition scale (8-electrode)",
+    url: "https://www.amazon.com/dp/B0FJFL8KP4",
+    role: "Advanced weight + body composition for demographics & progress (Advanced kit)",
+  },
+  kardiaMobile: {
+    asin: "B097Q4SLDP",
+    name: "KardiaMobile personal ECG (FDA-cleared)",
+    url: "https://www.amazon.com/dp/B097Q4SLDP",
+    role: "Optional single-lead ECG self-check alongside BP/HR logging (Advanced kit)",
   },
   potassiumBicarb: {
     asin: "B07B8W4LFX",
@@ -137,6 +157,8 @@ export type NutritionKitPlan = {
     shakerFills: number;
   };
   products: Array<KitProduct & { howToUse: string; caution?: string }>;
+  /** Editorial illustration for the kit panel. */
+  illustrationUrl: string;
   schedule: string[];
   sampleDay: string[];
   gaps: string[];
@@ -225,6 +247,13 @@ export function buildNutritionKitPlan(
   });
 
   products.push({
+    ...KIT_PRODUCTS.multistix,
+    howToUse:
+      "Use Multistix 10 SG per bottle timing/color chart. Log all 10 pads in VitalGauge demographics (glucose, bilirubin, ketone, SG, blood, pH, protein, urobilinogen, nitrite, leukocytes).",
+    caution: "DIY urine pads are not a lab urinalysis — seek care for pain, fever, or blood in urine.",
+  });
+
+  products.push({
     ...KIT_PRODUCTS.renphoBp,
     howToUse:
       "Sit quietly 5 minutes, then measure seated BP and pulse. For orthostatic check, stand and remeasure after ~1 minute. Enter seated/standing BP and resting HR in VitalGauge.",
@@ -287,6 +316,7 @@ export function buildNutritionKitPlan(
         ]
       : []),
     "Optional: saliva pH strip mid-morning → log in VitalGauge.",
+    "Optional: Multistix 10 SG urine pads → log all 10 pads in VitalGauge demographics.",
     wheyScoops > 0
       ? `Protein: ${wheyScoops} whey shake(s) in the Strada — place mid-morning and/or post-activity.`
       : "Protein: prioritize food first; keep whey optional.",
@@ -317,7 +347,7 @@ export function buildNutritionKitPlan(
       : useAdam
         ? "Multi: ADAM 1 tablet with a meal."
         : "Multi: choose ADAM or EVE after clarifying sex/clinician advice.",
-    "Measure: RENPHO scale (weight) · pH strips (saliva) · RENPHO BP (seated/standing + pulse) when logging vitals.",
+    "Measure: RENPHO scale (weight) · pH strips (saliva) · Multistix 10 SG · RENPHO BP (seated/standing + pulse) when logging vitals.",
   );
 
   if (multiUnclear) {
@@ -325,7 +355,6 @@ export function buildNutritionKitPlan(
   }
 
   const gaps = [
-    "Urine Multistix 10 SG is still a separate add-on for the full urine pad panel (not covered by basic pH strips).",
     "Carbs, fat, sodium, and potassium still come mostly from food.",
     "Kit D3 10,000 IU exceeds typical educational IU targets — labs/clinician timing preferred; stop if overload symptoms occur.",
     "Supplements and home devices are not a substitute for clinical care or bloodwork.",
@@ -333,10 +362,13 @@ export function buildNutritionKitPlan(
 
   return {
     disclaimer: NUTRITION_KIT_DISCLAIMER,
-    title: "Nutrition Kit plan (whey · multi · D3 · pH · RENPHO BP · scale)",
-    summary: `Use the Amazon kit for ~${proteinTargetG}g protein, multi coverage, Vitamin D3, and DIY vitals (pH strips, RENPHO BP, RENPHO scale). Stop D3 if overload symptoms appear.`,
+    title: "Nutrition Kit plan (whey · multi · D3 · pH · Multistix · RENPHO BP · scale)",
+    summary: `Use the Amazon kit for ~${proteinTargetG}g protein, multi coverage, Vitamin D3, DIY vitals (pH strips, Multistix 10 SG, RENPHO BP, scale). Stop D3 if overload symptoms appear.`,
     vitaminDOverloadNotice: VITAMIN_D_OVERLOAD_NOTICE,
     vitaminDOverloadSymptoms: [...VITAMIN_D_OVERLOAD_SYMPTOMS],
+    illustrationUrl: useEve
+      ? "/illustrations/kit-women.png"
+      : "/illustrations/kit-men.png",
     daily: {
       caloriesTarget: targets.calories.dailyTarget,
       proteinTargetG,
@@ -346,7 +378,10 @@ export function buildNutritionKitPlan(
       waterLiters,
       shakerFills,
     },
-    products,
+    products: products.map((p) => ({
+      ...p,
+      imageUrl: productImageUrl(p.asin),
+    })),
     schedule,
     sampleDay,
     gaps,

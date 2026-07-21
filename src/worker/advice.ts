@@ -200,7 +200,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const summaryParts = [
     `7-day DIY plan ready (Rest · Nutrition · Exercise)`,
     nutritionKit
-      ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · Vitamin D3 · pH + RENPHO BP/scale`
+      ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · Vitamin D3 · pH · Multistix · RENPHO BP/scale`
       : null,
     foodPlan ? "detailed food plan included" : null,
     weightProgress
@@ -210,7 +210,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
       ? targets.fatStores.reservesLine
       : null,
     doctorReview
-      ? `alternative blend metric review: ${doctorReview.findings.length} finding(s) · ${doctorReview.cards.length} theme cards`
+      ? `alternative blend metric review: ${doctorReview.findings.length} finding(s) · ${doctorReview.summaries.length} summary(ies)`
       : null,
     targets
       ? `targets: sleep ${targets.sleep.hoursTarget}h · ${

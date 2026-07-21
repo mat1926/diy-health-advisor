@@ -14,6 +14,106 @@ async function api(path, options = {}) {
   return data;
 }
 
+function withAssociateTag(url, tag) {
+  const t = (tag || "").trim();
+  if (!t || !url) return url;
+  try {
+    const u = new URL(url);
+    if (!/amazon\./i.test(u.hostname)) return url;
+    u.searchParams.set("tag", t);
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+function applyAmazonAffiliateUi(associateTag, disclosure) {
+  const note = document.getElementById("amazon-affiliate-note");
+  const kitAff = document.getElementById("out-kit-affiliate");
+  const bundlesAff = document.getElementById("kit-bundles-affiliate");
+  const multistix = document.getElementById("multistix-link");
+  if (associateTag && multistix) {
+    multistix.href = withAssociateTag(multistix.href, associateTag);
+    multistix.rel = "noopener noreferrer sponsored";
+  }
+  for (const el of [note, kitAff, bundlesAff]) {
+    if (!el) continue;
+    if (disclosure) {
+      el.hidden = false;
+      el.textContent = disclosure;
+    } else {
+      el.hidden = true;
+      el.textContent = "";
+    }
+  }
+}
+
+function fillKitBundles(bundles) {
+  const wrap = document.getElementById("kit-bundles");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  for (const b of bundles || []) {
+    const row = document.createElement("div");
+    row.className = "kit-bundle";
+
+    const photos = (b.products || []).filter((p) => p.imageUrl);
+    if (photos.length) {
+      const hero = document.createElement("div");
+      hero.className = "kit-bundle-hero-grid";
+      for (const p of photos.slice(0, 6)) {
+        const a = document.createElement("a");
+        a.href = p.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer sponsored";
+        a.title = p.name;
+        const img = document.createElement("img");
+        img.src = p.imageUrl;
+        img.alt = p.name;
+        img.loading = "lazy";
+        a.appendChild(img);
+        hero.appendChild(a);
+      }
+      row.appendChild(hero);
+    }
+
+    const title = document.createElement("strong");
+    title.textContent = b.name;
+    const summary = document.createElement("p");
+    summary.className = "muted";
+    summary.textContent = `${b.summary} · ${b.asins?.length || b.products?.length || 0} items`;
+
+    const thumbs = document.createElement("div");
+    thumbs.className = "product-thumbs";
+    for (const p of b.products || []) {
+      if (!p.imageUrl) continue;
+      const a = document.createElement("a");
+      a.href = p.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer sponsored";
+      a.title = p.name;
+      const img = document.createElement("img");
+      img.src = p.imageUrl;
+      img.alt = p.name;
+      img.loading = "lazy";
+      img.width = 72;
+      img.height = 72;
+      a.appendChild(img);
+      thumbs.appendChild(a);
+    }
+
+    const link = document.createElement("a");
+    link.className = "btn btn-primary";
+    link.href = b.cartUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer sponsored";
+    link.textContent = "Add all to Amazon cart";
+    row.append(title, summary);
+    if (thumbs.childElementCount) row.appendChild(thumbs);
+    row.appendChild(link);
+    wrap.appendChild(row);
+  }
+}
+
 function fillList(el, items) {
   el.innerHTML = "";
   for (const item of items || []) {
@@ -32,103 +132,6 @@ function fillPillar(prefix, block) {
   fillList(document.getElementById(`out-${prefix}-items`), block.items || []);
 }
 
-function fillNutrientTable(tableId, rows) {
-  const tbody = document.querySelector(`#${tableId} tbody`);
-  if (!tbody) return;
-  tbody.innerHTML = "";
-  for (const row of rows || []) {
-    const tr = document.createElement("tr");
-    const a = document.createElement("td");
-    a.textContent = row.name || row[0] || "";
-    const b = document.createElement("td");
-    b.textContent = row.amount != null ? `${row.amount} ${row.unit || ""}`.trim() : row[1] || "";
-    const c = document.createElement("td");
-    c.textContent = row.note || row[2] || "";
-    c.className = "muted";
-    tr.append(a, b, c);
-    tbody.appendChild(tr);
-  }
-}
-
-function fillTargets(t, disclaimer) {
-  const wrap = document.getElementById("out-targets-wrap");
-  if (!t) {
-    wrap.hidden = true;
-    return;
-  }
-  wrap.hidden = false;
-  document.getElementById("out-t-sleep").textContent = `${t.sleep.hoursTarget} hrs`;
-  document.getElementById("out-t-sleep-detail").textContent =
-    `Band ${t.sleep.hoursMin}–${t.sleep.hoursMax} hrs / night`;
-
-  const altProtein = t.priorityFocus === "alt_protein_micros";
-  const calBadge = document.getElementById("out-t-cal-badge");
-  if (calBadge) calBadge.textContent = altProtein ? "Protein goal" : "Calories";
-  if (altProtein) {
-    document.getElementById("out-t-cal").textContent = `${t.macros.proteinG} g`;
-    document.getElementById("out-t-cal-detail").textContent =
-      t.fatStores?.reservesLine
-        ? `Primary goal · ${t.fatStores.reservesLine}`
-        : "Primary goal · vitamins / minerals / amino acids · no calorie target";
-  } else {
-    document.getElementById("out-t-cal").textContent = `${t.calories.dailyTarget} kcal`;
-    document.getElementById("out-t-cal-detail").textContent =
-      `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`;
-  }
-  const intro = document.getElementById("out-targets-intro");
-  if (intro) {
-    intro.textContent = t.priorityNote || t.fatStores?.summary ||
-      "Calculated from your demographics — educational estimates only.";
-  }
-  document.getElementById("out-t-ex").textContent = `${t.exercise.dailyBurnTargetKcal} kcal/day`;
-  document.getElementById("out-t-ex-detail").textContent =
-    `Weekly ~${t.exercise.weeklyBurnTargetKcal} kcal intentional movement`;
-
-  const reservesWrap = document.getElementById("out-t-reserves-wrap");
-  if (reservesWrap) {
-    if (t.fatStores && t.fatStores.excessLb > 0) {
-      reservesWrap.hidden = false;
-      document.getElementById("out-t-reserves").textContent =
-        `~${t.fatStores.daysOfCaloricReserves} days`;
-      document.getElementById("out-t-reserves-detail").textContent =
-        t.fatStores.reservesLine;
-    } else {
-      reservesWrap.hidden = true;
-    }
-  }
-
-  const macroBody = altProtein
-    ? [
-        { name: "Protein", amount: t.macros.proteinG, unit: "g", note: "PRIMARY goal" },
-        { name: "Carbohydrates", amount: "—", unit: "", note: "Flexible · not a target" },
-        { name: "Fat", amount: "—", unit: "", note: "Flexible · not a target" },
-        { name: "Fiber", amount: "—", unit: "", note: "Supportive · not a primary target" },
-        { name: "Water", amount: t.macros.waterLiters, unit: "L", note: "Rough fluid habit" },
-      ]
-    : [
-        { name: "Protein", amount: t.macros.proteinG, unit: "g", note: `${t.macros.proteinPct}% kcal` },
-        { name: "Carbohydrates", amount: t.macros.carbsG, unit: "g", note: `${t.macros.carbsPct}% kcal` },
-        { name: "Fat", amount: t.macros.fatG, unit: "g", note: `${t.macros.fatPct}% kcal` },
-        { name: "Fiber", amount: t.macros.fiberG, unit: "g", note: "Educational daily fiber target" },
-        { name: "Water", amount: t.macros.waterLiters, unit: "L", note: "Rough fluid target from body weight" },
-      ];
-  const tbody = document.querySelector("#out-t-macros tbody");
-  tbody.innerHTML = "";
-  for (const row of macroBody) {
-    const tr = document.createElement("tr");
-    const amt = row.amount === "—" ? "—" : `${row.amount} ${row.unit}`.trim();
-    tr.innerHTML = `<td>${row.name}</td><td>${amt}</td><td class="muted">${row.note}</td>`;
-    tbody.appendChild(tr);
-  }
-
-  fillNutrientTable("out-t-aa", t.aminoAcids);
-  fillNutrientTable("out-t-vit", t.vitamins);
-  fillNutrientTable("out-t-min", t.minerals);
-  fillList(document.getElementById("out-t-ex-examples"), t.exercise.examples || []);
-  document.getElementById("out-targets-disclaimer").textContent =
-    t.disclaimer || disclaimer || "";
-}
-
 function fillNutritionKit(kit, disclaimer) {
   const wrap = document.getElementById("out-kit-wrap");
   if (!kit) {
@@ -137,6 +140,16 @@ function fillNutritionKit(kit, disclaimer) {
   }
   wrap.hidden = false;
   document.getElementById("out-kit-title").textContent = kit.title || "Nutrition Kit plan";
+  const kitIllust = document.getElementById("out-kit-illustration");
+  if (kitIllust) {
+    if (kit.illustrationUrl) {
+      kitIllust.hidden = false;
+      kitIllust.src = kit.illustrationUrl;
+      kitIllust.alt = kit.title || "Nutrition Kit";
+    } else {
+      kitIllust.hidden = true;
+    }
+  }
   document.getElementById("out-kit-summary").textContent = kit.summary || "";
   document.getElementById("out-kit-protein").textContent = `${kit.daily.proteinTargetG} g`;
   document.getElementById("out-kit-protein-detail").textContent =
@@ -153,16 +166,29 @@ function fillNutritionKit(kit, disclaimer) {
   prod.innerHTML = "";
   for (const p of kit.products || []) {
     const li = document.createElement("li");
+    li.className = "kit-product-row";
+    if (p.imageUrl) {
+      const thumb = document.createElement("img");
+      thumb.className = "kit-product-thumb";
+      thumb.src = p.imageUrl;
+      thumb.alt = "";
+      thumb.loading = "lazy";
+      thumb.width = 48;
+      thumb.height = 48;
+      li.appendChild(thumb);
+    }
+    const body = document.createElement("div");
     const a = document.createElement("a");
     a.href = p.url;
     a.target = "_blank";
-    a.rel = "noopener noreferrer";
+    a.rel = "noopener noreferrer sponsored";
     a.textContent = p.name;
-    li.appendChild(a);
-    li.appendChild(document.createTextNode(` — ${p.howToUse}`));
+    body.appendChild(a);
+    body.appendChild(document.createTextNode(` — ${p.howToUse}`));
     if (p.caution) {
-      li.appendChild(document.createTextNode(` Caution: ${p.caution}`));
+      body.appendChild(document.createTextNode(` Caution: ${p.caution}`));
     }
+    li.appendChild(body);
     prod.appendChild(li);
   }
   fillList(document.getElementById("out-kit-schedule"), kit.schedule || []);
@@ -184,13 +210,86 @@ function fillNutritionKit(kit, disclaimer) {
     kit.disclaimer || disclaimer || "";
 }
 
+function coverageStatusLabel(status) {
+  if (status === "on_track") return "Met";
+  if (status === "multi_helps") return "Multi helps";
+  if (status === "food_focus") return "Food focus";
+  return "Shortfall";
+}
+
+function dominantNote(rows) {
+  const counts = new Map();
+  for (const row of rows || []) {
+    const key = (row.fromMulti || "").trim();
+    if (!key || key === "—" || key === "none") continue;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  let best = null;
+  let bestN = 0;
+  for (const [k, n] of counts) {
+    if (n > bestN) {
+      best = k;
+      bestN = n;
+    }
+  }
+  if (!best || bestN < Math.max(2, Math.ceil((rows || []).length * 0.4))) return null;
+  return best;
+}
+
 function fillCoverageTable(tableId, rows) {
   const tbody = document.querySelector(`#${tableId} tbody`);
+  const noteEl = document.getElementById(`${tableId}-note`);
   if (!tbody) return;
   tbody.innerHTML = "";
-  for (const row of rows || []) {
+
+  const list = rows || [];
+  const shared = dominantNote(list);
+  if (noteEl) {
+    if (shared) {
+      noteEl.hidden = false;
+      noteEl.textContent = `Main source: ${shared}`;
+    } else {
+      noteEl.hidden = true;
+      noteEl.textContent = "";
+    }
+  }
+
+  const allMet = list.length > 0 && list.every((r) => r.status === "on_track");
+  if (allMet && shared) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${row.name}</td><td>${row.fromPlan} ${row.unit || ""}</td><td>${row.target} ${row.unit || ""}</td><td class="muted">${row.fromMulti || row.note || ""}</td>`;
+    tr.innerHTML = `<td colspan="3"><strong>All listed nutrients met</strong> via the main source above.</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  // Prefer showing shortfalls / exceptions first; collapse fully-met rows when most share one source
+  const showRows =
+    shared && list.filter((r) => r.status === "on_track" && (r.fromMulti || "").trim() === shared).length >= 3
+      ? list.filter(
+          (r) =>
+            r.status !== "on_track" ||
+            (r.fromMulti || "").trim() !== shared,
+        )
+      : list;
+
+  if (shared && showRows.length < list.length) {
+    const metN = list.length - showRows.length;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="3" class="muted">${metN} other nutrient(s) met via the main source above.</td>`;
+    tbody.appendChild(tr);
+  }
+
+  for (const row of showRows.length ? showRows : list) {
+    const tr = document.createElement("tr");
+    const unit = row.unit || "";
+    const coverage = `${row.fromPlan} / ${row.target} ${unit}`.trim();
+    const exception =
+      shared && (row.fromMulti || "").trim() && (row.fromMulti || "").trim() !== shared
+        ? ` · ${row.fromMulti}`
+        : !shared && row.fromMulti
+          ? ` · ${row.fromMulti}`
+          : "";
+    tr.innerHTML = `<td>${row.name}</td><td>${coverage}${exception}</td><td>${coverageStatusLabel(row.status)}</td>`;
     tbody.appendChild(tr);
   }
 }
@@ -439,71 +538,6 @@ function fillProgress(wp, disclaimer) {
   if (exSel && wp.plan) exSel.value = String(wp.plan.exerciseBonusKcal || 0);
 }
 
-function fillDoctorReview(review, disclaimer) {
-  const wrap = document.getElementById("out-doctor-wrap");
-  if (!review || !review.cards?.length) {
-    wrap.hidden = true;
-    return;
-  }
-  wrap.hidden = false;
-
-  const demo = document.getElementById("out-doctor-demo");
-  if (review.demoNote) {
-    demo.hidden = false;
-    demo.textContent = review.demoNote;
-  } else {
-    demo.hidden = true;
-  }
-
-  fillList(
-    document.getElementById("out-doctor-findings"),
-    (review.findings || []).map((f) => `${f.label}: ${f.detail}`),
-  );
-
-  const cardsEl = document.getElementById("out-doctor-cards");
-  cardsEl.innerHTML = "";
-  for (const card of review.cards) {
-    const article = document.createElement("article");
-    article.className = "panel";
-    article.style.marginBottom = "0.75rem";
-    article.dataset.doctor = card.doctor.id;
-    article.dataset.metric = card.metricKey;
-
-    const badge = document.createElement("p");
-    badge.className = "badge";
-    badge.textContent = `Blend theme · ${card.doctor.displayName} · ${card.metricLabel}`;
-
-    const title = document.createElement("h4");
-    title.style.margin = "0.35rem 0";
-    title.textContent = card.rec.title;
-
-    const finding = document.createElement("p");
-    finding.className = "muted";
-    finding.textContent = card.findingDetail;
-
-    const rec = document.createElement("p");
-    rec.textContent = card.rec.recommendation;
-
-    const ul = document.createElement("ul");
-    for (const tip of card.rec.lifestyle || []) {
-      const li = document.createElement("li");
-      li.textContent = tip;
-      ul.appendChild(li);
-    }
-
-    const caution = document.createElement("p");
-    caution.className = "muted";
-    caution.style.fontSize = "0.9rem";
-    caution.textContent = `Caution: ${card.rec.caution}`;
-
-    article.append(badge, title, finding, rec, ul, caution);
-    cardsEl.appendChild(article);
-  }
-
-  document.getElementById("out-doctor-disclaimer").textContent =
-    review.disclaimer || disclaimer || "";
-}
-
 function renderAdviceResult(data) {
   document.getElementById("out-summary").textContent = data.summary;
   document.getElementById("out-meta").textContent =
@@ -526,19 +560,10 @@ function renderAdviceResult(data) {
     pillarsEl.hidden = true;
   }
 
-  fillTargets(data.targets, data.targetsDisclaimer);
   fillNutritionKit(data.nutritionKit, data.nutritionKitDisclaimer);
   fillFoodPlan(data.foodPlan, data.foodPlanDisclaimer);
   fillProgress(data.weightProgress, data.progressDisclaimer);
-  fillDoctorReview(data.doctorReview, data.doctorDbDisclaimer);
-
-  const themesWrap = document.getElementById("out-themes-wrap");
-  if (data.perspective?.themes?.length) {
-    themesWrap.hidden = false;
-    fillList(document.getElementById("out-themes"), data.perspective.themes);
-  } else {
-    themesWrap.hidden = true;
-  }
+  applyAmazonAffiliateUi(data.associateTag, data.amazonAssociateDisclosure);
 
   const lifeWrap = document.getElementById("out-life-wrap");
   const le = data.lifeExpectancy;
@@ -600,6 +625,13 @@ async function boot() {
   }
 
   const me = await api("/v1/me");
+  try {
+    const plans = await api("/v1/plans");
+    applyAmazonAffiliateUi(plans.associateTag, plans.amazonAssociateDisclosure);
+    fillKitBundles(plans.kitBundles);
+  } catch {
+    // affiliate tagging is optional
+  }
   const plan = me.plan || "free";
   badge.textContent = `Plan: ${me.limits?.name || plan}`;
   sub.textContent = `${me.limits?.name || plan} · ${me.limits?.advicePerDay ?? "?"} advice runs / day`;

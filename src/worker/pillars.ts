@@ -338,7 +338,7 @@ function buildExercise(
         focus = "Keep walking consistent and train strength 2–3 times.";
         weeklyTarget = "Walk most days · strength 2–3× · optional 1 easy cardio · 1 rest day";
         items.push(
-          "Walk most days 20–40 minutes, or use short post-meal walks.",
+          "Walk most days 20–40 minutes or more, or use short post-meal walks.",
           "Strength train 2–3× this week with 4–6 compound movements.",
           "Optional: one easy cardio session if you feel recovered.",
         );

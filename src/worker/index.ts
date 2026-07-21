@@ -11,6 +11,11 @@ import {
 import { lensDisclaimerFor, PERSPECTIVES } from "./perspectives";
 import { listDoctorMetricCatalog } from "./doctorMetricsDb";
 import {
+  AMAZON_ASSOCIATE_DISCLOSURE,
+  tagAmazonUrlsDeep,
+} from "./amazonAssociates";
+import { listKitBundles } from "./kitBundles";
+import {
   createPortalSession,
   getEntitlement,
   getStripe,
@@ -50,16 +55,29 @@ app.get("/v1/health", (c) =>
   }),
 );
 
-app.get("/v1/plans", (c) =>
-  c.json({
+app.get("/v1/plans", (c) => {
+  const associateTag = c.env.AMAZON_ASSOCIATE_TAG?.trim() || null;
+  return c.json({
     disclaimer: MEDICAL_DISCLAIMER,
     lensDisclaimerCdc: lensDisclaimerFor("cdc"),
     lensDisclaimerAlternative: lensDisclaimerFor("alternative"),
     perspectives: PERSPECTIVES,
     plans: PLAN_LIMITS,
     publishableKey: c.env.STRIPE_PUBLISHABLE_KEY,
-  }),
-);
+    associateTag,
+    amazonAssociateDisclosure: associateTag ? AMAZON_ASSOCIATE_DISCLOSURE : null,
+    kitBundles: listKitBundles(associateTag),
+  });
+});
+
+app.get("/v1/kit-bundles", (c) => {
+  const associateTag = c.env.AMAZON_ASSOCIATE_TAG?.trim() || null;
+  return c.json({
+    associateTag,
+    amazonAssociateDisclosure: associateTag ? AMAZON_ASSOCIATE_DISCLOSURE : null,
+    kitBundles: listKitBundles(associateTag),
+  });
+});
 
 app.get("/v1/doctor-metrics", (c) => c.json(listDoctorMetricCatalog()));
 
@@ -98,8 +116,15 @@ app.post("/v1/advice", async (c) => {
   const advice = await generateAdvice(plan, metrics, c.env.OPENAI_API_KEY);
   await c.env.SESSIONS.put(dayKey, String(used + 1), { expirationTtl: 60 * 60 * 48 });
 
+  const associateTag = c.env.AMAZON_ASSOCIATE_TAG?.trim() || null;
+  const tagged = tagAmazonUrlsDeep(advice, associateTag);
+  const kitBundles = listKitBundles(associateTag);
+
   return c.json({
-    ...advice,
+    ...tagged,
+    associateTag,
+    amazonAssociateDisclosure: associateTag ? AMAZON_ASSOCIATE_DISCLOSURE : null,
+    kitBundles,
     usage: { used: used + 1, limit },
   });
 });

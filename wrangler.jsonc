@@ -40,6 +40,8 @@
   "vars": {
     "APP_NAME": "VitalGauge",
     "APP_URL": "https://health.emailmenow.com",
+    // Amazon Associates Store ID / tracking ID
+    "AMAZON_ASSOCIATE_TAG": "lose1230c-20",
     // Create a Stripe Product + recurring Price, then paste the price id here (or dashboard var)
     "STRIPE_PRICE_PLUS": "price_REPLACE_ME",
     "STRIPE_PUBLISHABLE_KEY": "pk_test_REPLACE_ME"
