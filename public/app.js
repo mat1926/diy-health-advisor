@@ -60,7 +60,7 @@ function fillKitBundles(bundles) {
     if (photos.length) {
       const hero = document.createElement("div");
       hero.className = "kit-bundle-hero-grid";
-      for (const p of photos.slice(0, 6)) {
+      for (const p of photos.slice(0, 9)) {
         const a = document.createElement("a");
         a.href = p.url;
         a.target = "_blank";

@@ -1,5 +1,5 @@
 import { productImageUrl, amazonCartAddUrl } from "./amazonAssociates";
-import { KIT_PRODUCTS } from "./nutritionKit";
+import { KIT_PRODUCTS, SHORTFALL_STAPLES } from "./nutritionKit";
 
 export type KitBundleId = "men" | "women" | "men_advanced" | "women_advanced";
 
@@ -36,6 +36,8 @@ const SHARED_CORE = [
   KIT_PRODUCTS.phStrips,
   KIT_PRODUCTS.multistix,
   KIT_PRODUCTS.renphoBp,
+  SHORTFALL_STAPLES.eggs,
+  SHORTFALL_STAPLES.greekYogurt,
 ] as const;
 
 function productList(
@@ -98,28 +100,28 @@ export function listKitBundles(associateTag?: string | null): KitBundle[] {
     defineBundle(
       "men",
       "Men kit",
-      "Whey · shaker · ADAM multi · D3 · pH strips · Multistix 10 SG · RENPHO BP · RENPHO smart scale",
+      "Whey · shaker · ADAM · D3 · pH · Multistix · BP · scale · regenerative eggs · Stonyfield Greek yogurt",
       menRegular,
       associateTag,
     ),
     defineBundle(
       "women",
       "Women kit",
-      "Whey · shaker · EVE multi · D3 · pH strips · Multistix 10 SG · RENPHO BP · RENPHO smart scale",
+      "Whey · shaker · EVE · D3 · pH · Multistix · BP · scale · regenerative eggs · Stonyfield Greek yogurt",
       womenRegular,
       associateTag,
     ),
     defineBundle(
       "men_advanced",
       "Men Advanced kit",
-      "Regular Men kit with MorphoScan Nova body composition scale (replaces basic scale) + KardiaMobile ECG",
+      "Men kit staples + MorphoScan Nova (replaces basic scale) + KardiaMobile ECG · eggs · Greek yogurt",
       menAdvanced,
       associateTag,
     ),
     defineBundle(
       "women_advanced",
       "Women Advanced kit",
-      "Regular Women kit with MorphoScan Nova body composition scale (replaces basic scale) + KardiaMobile ECG",
+      "Women kit staples + MorphoScan Nova (replaces basic scale) + KardiaMobile ECG · eggs · Greek yogurt",
       womenAdvanced,
       associateTag,
     ),
