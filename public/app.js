@@ -61,11 +61,15 @@ function fillTargets(t, disclaimer) {
   document.getElementById("out-t-sleep-detail").textContent =
     `Band ${t.sleep.hoursMin}–${t.sleep.hoursMax} hrs / night`;
   document.getElementById("out-t-cal").textContent = `${t.calories.dailyTarget} kcal`;
-  document.getElementById("out-t-cal-detail").textContent =
-    `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`;
+  const calDetail =
+    t.calories.fromFatStoresKcal && t.calories.fromFatStoresKcal > 0
+      ? `Food ~${t.calories.dailyTarget} · from fat stores ~${t.calories.fromFatStoresKcal} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`
+      : `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`;
+  document.getElementById("out-t-cal-detail").textContent = calDetail;
   const intro = document.getElementById("out-targets-intro");
-  if (intro && t.priorityNote) {
-    intro.textContent = t.priorityNote;
+  if (intro) {
+    intro.textContent = t.priorityNote || t.fatStores?.summary ||
+      "Calculated from your demographics — educational estimates only.";
   }
   document.getElementById("out-t-ex").textContent = `${t.exercise.dailyBurnTargetKcal} kcal/day`;
   document.getElementById("out-t-ex-detail").textContent =
@@ -251,7 +255,11 @@ function fillProgress(wp, disclaimer) {
   wrap.hidden = false;
   const altNote = document.getElementById("out-progress-alt-note");
   if (altNote) {
-    altNote.hidden = !(wp.pace?.note || "").toLowerCase().includes("alternative");
+    const isAlt =
+      (wp.pace?.note || "").toLowerCase().includes("alternative") ||
+      (wp.pace?.note || "").toLowerCase().includes("fat-store") ||
+      (wp.pace?.note || "").toLowerCase().includes("fat store");
+    altNote.hidden = !isAlt;
   }
   document.getElementById("out-progress-summary").textContent =
     wp.toHealthyBmi?.summary || "";

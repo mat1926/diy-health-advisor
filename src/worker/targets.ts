@@ -1,11 +1,12 @@
 import { type MetricsInput } from "./plans";
 import { isCdcPerspective, resolvePerspective } from "./perspectives";
+import { estimateFatStores, type FatStoreEstimate } from "./fatStores";
 
 export const TARGETS_DISCLAIMER = `These numeric targets are DIY educational estimates from your demographics (age, sex, height, weight, activity, goal, and plan style). They are not medical prescriptions, lab orders, or personalized clinical nutrition. Do not megadose supplements from this table — discuss labs and supplements with a licensed clinician.`;
 
 export const TARGETS_DISCLAIMER_CDC = `${TARGETS_DISCLAIMER} On the CDC-style plan, sleep, activity, fiber, sodium, and micronutrient placeholders follow common public-health / Dietary Guidelines–style educational ranges.`;
 
-export const TARGETS_DISCLAIMER_ALT = `${TARGETS_DISCLAIMER} On alternative plans, macros and habit framing follow lower-refined-carb / metabolic wellness themes — not CDC Dietary Guidelines or CDC activity targets.`;
+export const TARGETS_DISCLAIMER_ALT = `${TARGETS_DISCLAIMER} On alternative plans, macros and habit framing follow lower-refined-carb / metabolic wellness themes — not CDC Dietary Guidelines or CDC activity targets. Weight above an ideal BMI may be treated as educational “fat stores” that can supply part of daily energy.`;
 
 export function targetsDisclaimerFor(perspectiveId: ReturnType<typeof resolvePerspective>): string {
   return isCdcPerspective(perspectiveId) ? TARGETS_DISCLAIMER_CDC : TARGETS_DISCLAIMER_ALT;
@@ -24,6 +25,8 @@ export type DetailedTargets = {
   /** Alternative plans prioritize protein + micros; carbs/fat are flexible. */
   priorityFocus: "cdc_balanced" | "alt_protein_micros";
   priorityNote: string;
+  /** Present on Alternative plans when excess mass is modeled as mobilizable fat. */
+  fatStores: FatStoreEstimate | null;
   sleep: {
     hoursMin: number;
     hoursTarget: number;
@@ -35,6 +38,10 @@ export type DetailedTargets = {
     tdee: number;
     dailyTarget: number;
     goalAdjustment: string;
+    /** Energy assumed from body-fat stores (educational). */
+    fromFatStoresKcal?: number;
+    /** Food intake target (same as dailyTarget; named for clarity on alt plans). */
+    fromFoodKcal?: number;
   };
   exercise: {
     dailyBurnTargetKcal: number;
@@ -139,17 +146,25 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   // Calorie target
   let dailyTarget = tdee;
   let goalAdjustment = "Maintenance estimate (activity-adjusted TDEE).";
+  let fromFatStoresKcal = 0;
+  const fatStores = !cdc ? estimateFatStores(m, { tdee }) : null;
+
   if (!cdc) {
-    // Alternative plans: modest deficit by default so protein-forward days support fat loss
-    // unless explicitly in a strength surplus.
+    // Alternative: food covers protein + micros; energy gap draws from modeled fat stores when available
     if (goal === "strength") {
       dailyTarget = Math.round(tdee + 150);
+      fromFatStoresKcal = 0;
       goalAdjustment =
-        "Alternative plan: slight surplus for training while still prioritizing protein + micronutrients (carbs/fat flexible).";
+        "Alternative plan: slight food surplus for training — protein + micronutrients primary; little/no draw from fat stores.";
+    } else if (fatStores && fatStores.excessLb > 0 && fatStores.dailyDrawKcal > 0) {
+      fromFatStoresKcal = fatStores.dailyDrawKcal;
+      dailyTarget = Math.max(1200, Math.round(tdee - fromFatStoresKcal));
+      goalAdjustment = `Alternative plan: food ≈ ${dailyTarget} kcal; ~${fromFatStoresKcal} kcal/day assumed from fat stores (~${fatStores.excessLb} lb over ideal BMI ${fatStores.idealBmi}). Hit protein, vitamins, minerals, and amino acids — carbs/fat from food are flexible.`;
     } else {
       dailyTarget = Math.max(1200, Math.round(tdee - 400));
+      fromFatStoresKcal = Math.max(0, tdee - dailyTarget);
       goalAdjustment =
-        "Alternative plan: ~−400 kcal vs TDEE for educational fat-loss pace — hit protein, vitamins, minerals, and amino acids; carbs/fat are flexible fuel, not primary targets.";
+        "Alternative plan: ~−400 kcal vs TDEE (little excess above ideal modeled) — protein + micros primary; carbs/fat flexible.";
     }
   } else if (goal === "weight") {
     dailyTarget = Math.max(1200, Math.round(tdee - 400));
@@ -171,7 +186,8 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   const calorieAdjust = m.calorieAdjust ?? 0;
   if (calorieAdjust < 0) {
     dailyTarget = Math.max(1200, Math.round(dailyTarget + calorieAdjust));
-    goalAdjustment += ` User modifier: ${calorieAdjust} kcal/day on intake.`;
+    fromFatStoresKcal = Math.max(0, tdee - dailyTarget);
+    goalAdjustment += ` User modifier: ${calorieAdjust} kcal/day on food intake (larger draw from stores).`;
   }
 
   // Exercise burn — CDC plan can use a public-health-style activity floor; alt uses recovery/walking-oriented floors only
@@ -367,11 +383,14 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     disclaimer: targetsDisclaimerFor(perspective),
     method: cdc
       ? "CDC-style plan: sleep/activity/fiber/sodium/micronutrients use public-health educational ranges; calories via Mifflin–St Jeor × activity; macros AMDR-leaning (carb-forward)."
-      : "Alternative plan: PRIMARY goals are protein (g), essential amino acids, vitamins, and minerals. Carbs and fat are flexible fuel only (not hard targets). Default modest calorie deficit for educational weight-loss pace. Does not use CDC Dietary Guidelines.",
+      : "Alternative plan: PRIMARY goals are protein, essential amino acids, vitamins, and minerals. Weight above ideal BMI is modeled as mobilizable fat stores that can supply the energy gap (food intake < TDEE). Carbs/fat from food are flexible only.",
     priorityFocus: cdc ? "cdc_balanced" : "alt_protein_micros",
     priorityNote: cdc
       ? "CDC-style: balanced macros including carbs and fat as intentional plate targets."
-      : "Alternative: aim to hit protein, amino acids, vitamins, and minerals. Carbs/fat fill remaining calories — do not force high-carb targets.",
+      : fatStores && fatStores.excessLb > 0
+        ? `Alternative: hit protein + micros. ~${fatStores.excessLb} lb over ideal treated as fat stores (~${fromFatStoresKcal} kcal/day from stores + ~${dailyTarget} kcal from food).`
+        : "Alternative: aim to hit protein, amino acids, vitamins, and minerals. Carbs/fat fill remaining food calories — do not force high-carb targets.",
+    fatStores: cdc ? null : fatStores,
     sleep: {
       hoursMin,
       hoursTarget,
@@ -385,6 +404,8 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
       tdee,
       dailyTarget,
       goalAdjustment,
+      fromFatStoresKcal: cdc ? undefined : fromFatStoresKcal,
+      fromFoodKcal: dailyTarget,
     },
     exercise: {
       dailyBurnTargetKcal,

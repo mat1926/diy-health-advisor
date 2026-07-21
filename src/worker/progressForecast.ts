@@ -82,7 +82,9 @@ export function buildWeightProgressForecast(
   let weeklyLossLb = Math.round(((dailyDeficitKcal * 7) / 3500) * 10) / 10;
 
   let note = altProteinMicros
-    ? "Alternative plan forecast: deficit from protein-forward calorie target (carbs/fat flexible)."
+    ? targets.fatStores && targets.fatStores.excessLb > 0
+      ? `Fat-store model: ~${targets.fatStores.excessLb} lb over ideal ≈ ${targets.fatStores.estimatedStoreKcal.toLocaleString()} kcal; drawing ~${dailyDeficitKcal} kcal/day from stores.`
+      : "Alternative plan forecast: deficit from protein-forward food target (carbs/fat flexible)."
     : "Educational pace from calorie gap ÷ 3,500 kcal per lb.";
   if (weeklyLossLb > 2) {
     weeklyLossLb = 2;
@@ -132,7 +134,9 @@ export function buildWeightProgressForecast(
     summary = `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) would take well over 2 years on this simple model.`;
   } else {
     summary = altProteinMicros
-      ? `At ~${weeklyLossLb} lb/week on this Alternative protein-forward deficit, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`
+      ? targets.fatStores && targets.fatStores.excessLb > 0
+        ? `Modeling ~${targets.fatStores.excessLb} lb over ideal as fat stores. At ~${weeklyLossLb} lb/week from a ~${dailyDeficitKcal} kcal/day store draw, BMI ~${targetBmi} is roughly ${estimatedWeeks} weeks away — illustrative only.`
+        : `At ~${weeklyLossLb} lb/week on this Alternative protein-forward deficit, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`
       : `At ~${weeklyLossLb} lb/week, reaching BMI ~${targetBmi} (~${targetWeightLb} lb) is roughly ${estimatedWeeks} weeks — illustrative only.`;
   }
 
@@ -169,7 +173,9 @@ export function buildWeightProgressForecast(
       summary,
     },
     modifiersHint: altProteinMicros
-      ? "Alternative plan already uses a ~400 kcal deficit. Adjust calories or exercise below to update the forecast and food plan."
+      ? targets.fatStores && targets.fatStores.excessLb > 0
+        ? `Food covers protein + micros (~${targets.calories.dailyTarget} kcal); energy gap is assumed from fat stores. Adjust food calories or exercise to change the store-draw rate.`
+        : "Alternative plan uses a food deficit. Adjust calories or exercise below to update the forecast and food plan."
       : "Use the controls below to cut more calories or add exercise burn, then update the forecast and food plan.",
   };
 }
