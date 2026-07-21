@@ -23,6 +23,15 @@ function fillList(el, items) {
   }
 }
 
+function fillPillar(prefix, block) {
+  if (!block) return;
+  document.getElementById(`out-${prefix}-focus`).textContent = block.focus || "";
+  document.getElementById(`out-${prefix}-target`).textContent = block.weeklyTarget
+    ? `This week: ${block.weeklyTarget}`
+    : "";
+  fillList(document.getElementById(`out-${prefix}-items`), block.items || []);
+}
+
 async function boot() {
   const form = document.getElementById("metrics-form");
   const badge = document.getElementById("plan-badge");
@@ -106,6 +115,17 @@ async function boot() {
       } else {
         lens.hidden = true;
       }
+
+      const pillarsEl = document.getElementById("out-pillars");
+      if (data.pillars?.rest && data.pillars?.nutrition && data.pillars?.exercise) {
+        pillarsEl.hidden = false;
+        fillPillar("rest", data.pillars.rest);
+        fillPillar("nutrition", data.pillars.nutrition);
+        fillPillar("exercise", data.pillars.exercise);
+      } else {
+        pillarsEl.hidden = true;
+      }
+
       const themesWrap = document.getElementById("out-themes-wrap");
       if (data.perspective?.themes?.length) {
         themesWrap.hidden = false;
@@ -135,7 +155,13 @@ async function boot() {
         lifeWrap.hidden = true;
       }
 
-      fillList(document.getElementById("out-actions"), data.actions);
+      const actionsWrap = document.getElementById("out-actions-wrap");
+      if (data.actions?.length) {
+        actionsWrap.hidden = false;
+        fillList(document.getElementById("out-actions"), data.actions);
+      } else {
+        actionsWrap.hidden = true;
+      }
       fillList(document.getElementById("out-watchouts"), data.watchouts);
       fillList(document.getElementById("out-care"), data.whenToSeekCare);
       document.getElementById("out-disclaimer").textContent = data.disclaimer;
@@ -151,7 +177,7 @@ async function boot() {
       }
     } finally {
       btn.disabled = false;
-      btn.textContent = "Get guidance";
+      btn.textContent = "Get my 7-day plan";
     }
   });
 }

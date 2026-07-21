@@ -5,7 +5,9 @@ DIY health metrics → AI-enhanced wellness guidance, with hard medical disclaim
 **Production:** [https://health.emailmenow.com](https://health.emailmenow.com)  
 **Not a doctor. Not a diagnosis. Not emergency care.**
 
-Mobile (Android + iPhone) roadmap: [docs/MOBILE-APPS.md](docs/MOBILE-APPS.md)
+Mobile (Android + iPhone) roadmap: [docs/MOBILE-APPS.md](docs/MOBILE-APPS.md)  
+Usability expansion options: [docs/USABILITY-OPTIONS.md](docs/USABILITY-OPTIONS.md)  
+Rest · Nutrition · Exercise plan: [docs/REST-NUTRITION-EXERCISE-PLAN.md](docs/REST-NUTRITION-EXERCISE-PLAN.md)
 
 ## What it does
 

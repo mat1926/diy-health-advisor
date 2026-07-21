@@ -7,10 +7,14 @@ import {
 import {
   LENS_DISCLAIMER,
   PERSPECTIVES,
-  pickHabits,
   resolvePerspective,
   type PerspectiveId,
 } from "./perspectives";
+import {
+  buildPillars,
+  pillarsToActions,
+  type PillarsPlan,
+} from "./pillars";
 
 export type AdviceResult = {
   disclaimer: string;
@@ -18,6 +22,8 @@ export type AdviceResult = {
   lifeExpectancyDisclaimer: string;
   perspective: { id: PerspectiveId; label: string; themes: string[] };
   lifeExpectancy: LifeExpectancyEstimate | null;
+  /** Detailed 7-day DIY plan shown after demographics are submitted */
+  pillars: PillarsPlan;
   summary: string;
   actions: string[];
   watchouts: string[];
@@ -26,46 +32,16 @@ export type AdviceResult = {
   source: "ai" | "template";
 };
 
-function phNotes(m: MetricsInput, actions: string[], watchouts: string[]) {
-  const saliva = m.salivaPh;
-  const urine = m.urinePh;
-  if (saliva == null && urine == null) return;
-
-  actions.push(
-    "DIY saliva/urine pH strips are educational self-tracking only — readings swing with food, hydration, and time of day.",
-  );
-
-  if (typeof saliva === "number") {
-    if (saliva < 6.4) {
-      actions.push(
-        "Morning saliva reading on the lower side: many naturopathic stress-pattern kits suggest reviewing sleep, mineral-rich foods, and meal timing — then re-check the same time of day for a week.",
-      );
-    } else if (saliva > 7.2) {
-      actions.push(
-        "Saliva reading on the higher side: note recent meals, hydration, and oral hygiene; track patterns rather than reacting to a single strip.",
-      );
-    } else {
-      actions.push(
-        "Saliva pH in a commonly discussed mid-range for DIY kits — keep logging at a consistent time before changing many habits at once.",
-      );
-    }
-  }
-
-  if (typeof urine === "number") {
-    if (urine < 6.0) {
-      actions.push(
-        "Urine pH on the acidic side of DIY strip ranges often reflects recent diet/hydration; focus on vegetables, hydration, and stress recovery rather than extreme “alkalizing” products.",
-      );
-    } else if (urine > 7.5) {
-      watchouts.push(
-        "Persistently high urine pH can have many causes (including infection). If you have pain, fever, or urinary symptoms, contact a clinician — do not self-treat from a strip.",
-      );
-    }
-  }
-
+function phWatchouts(m: MetricsInput, watchouts: string[]) {
+  if (m.salivaPh == null && m.urinePh == null) return;
   watchouts.push(
     "Home pH strips are not lab diagnostics and are not validated to diagnose disease or “acid body type.”",
   );
+  if (typeof m.urinePh === "number" && m.urinePh > 7.5) {
+    watchouts.push(
+      "Persistently high urine pH can have many causes (including infection). If you have pain, fever, or urinary symptoms, contact a clinician.",
+    );
+  }
 }
 
 function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
@@ -73,96 +49,45 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const goal = m.primaryGoal ?? "general";
   const perspectiveId = resolvePerspective(m.perspective);
   const perspective = PERSPECTIVES[perspectiveId];
-  const habitCount = plan === "plus" ? 4 : 2;
+  const pillars = buildPillars(plan, m);
+  const lifeExpectancy = estimateLifeExpectancy(m);
 
   const summaryParts = [
-    `Using a ${perspective.shortName} DIY lens`,
-    `metrics: age ${m.age ?? "n/a"}, activity ${m.activityLevel ?? "n/a"}, goal ${goal}`,
+    `7-day DIY plan ready (Rest · Nutrition · Exercise)`,
+    `${perspective.shortName} lens`,
+    `age ${m.age ?? "n/a"}, activity ${m.activityLevel ?? "n/a"}, goal ${goal}`,
     bodyMass ? `BMI ≈ ${bodyMass}` : null,
-    m.salivaPh != null || m.urinePh != null
-      ? `DIY pH logged (saliva ${m.salivaPh ?? "—"}, urine ${m.urinePh ?? "—"})`
-      : null,
-    "educational wellness guidance only — not a diagnosis or endorsement of any clinician.",
+    "educational only — not a diagnosis.",
   ].filter(Boolean);
 
-  const actions: string[] = [...pickHabits(perspectiveId, habitCount)];
   const watchouts: string[] = [
     "Sudden chest pain, severe shortness of breath, fainting, confusion, or uncontrolled bleeding need emergency care.",
     "Do not start/stop prescription medication, herbs, or cleanses based on this tool alone.",
     LENS_DISCLAIMER,
   ];
 
-  switch (goal) {
-    case "energy":
-      actions.push(
-        "Keep a consistent wake time and get morning outdoor light for 10–20 minutes.",
-        "Pair protein with your first meal; avoid relying only on sugar for mid-day energy.",
-      );
-      break;
-    case "sleep":
-      actions.push(
-        "Dim screens 60 minutes before bed and keep the bedroom cool and dark.",
-        "Limit caffeine after early afternoon; protect a fixed wind-down routine.",
-      );
-      break;
-    case "weight":
-      actions.push(
-        "Track meals for 7 days without extreme restriction first — awareness before aggressive fasting.",
-        "Emphasize protein-forward plates and walking; avoid crash cleanses marketed as fat loss.",
-      );
-      break;
-    case "strength":
-      actions.push(
-        "Train 4–6 compound movements 2–3×/week and progress load when form is solid.",
-        "Eat enough protein across meals; recovery and sleep are part of strength.",
-      );
-      break;
-    case "stress":
-      actions.push(
-        "Practice 5 minutes of slow breathing daily and protect one recovery block weekly.",
-        "If you use DIY pH strips for “stress patterns,” log them at the same time of day for trend-watching only.",
-      );
-      break;
-    default:
-      actions.push(
-        "Walk most days and add two short strength sessions weekly.",
-        "Change one habit at a time and review metrics weekly.",
-      );
-  }
-
-  if (m.activityLevel === "sedentary" || m.activityLevel === "light") {
-    actions.push("Break up long sitting with a 2–3 minute stand/walk every hour.");
-  }
-
-  const lifeExpectancy = estimateLifeExpectancy(m);
-  if (lifeExpectancy && lifeExpectancy.comparison.yearsVsIdeal < -1) {
-    actions.push(
-      `Illustrative longevity gap vs ideal measurements: about ${Math.abs(lifeExpectancy.comparison.yearsVsIdeal)} years on this simple model — close it with sustainable habits, not crash diets.`,
-    );
-  }
-
   if (plan === "plus") {
-    phNotes(m, actions, watchouts);
+    phWatchouts(m, watchouts);
     if (typeof m.sleepHours === "number" && m.sleepHours < 6) {
-      actions.unshift("Prioritize sleep duration before aggressive fasting or hard training.");
       watchouts.push("Chronic short sleep can worsen mood, appetite regulation, and recovery.");
-    }
-    if (typeof m.stressLevel === "number" && m.stressLevel >= 8) {
-      actions.unshift("Treat stress load as the primary lever this week — reduce optional intensity.");
     }
     if (typeof m.restingHeartRate === "number" && m.restingHeartRate > 100) {
       watchouts.push(
         "Elevated resting heart rate can have many causes; discuss persistent elevation with a clinician.",
       );
     }
-    if (typeof m.waterLiters === "number" && m.waterLiters < 1.5) {
-      actions.push("Nudge daily fluids upward gradually; pair water with each meal.");
-    }
     if (m.notes) {
-      actions.push(
+      watchouts.push(
         "Your notes are for self-tracking context — bring them to a licensed clinician, don’t self-diagnose.",
       );
     }
+  }
+
+  if (lifeExpectancy && lifeExpectancy.comparison.yearsVsIdeal < -1) {
+    pillars.nutrition.items = uniquePush(
+      pillars.nutrition.items,
+      `Illustrative longevity gap vs ideal measurements: about ${Math.abs(lifeExpectancy.comparison.yearsVsIdeal)} years on this simple model — close it with sustainable habits, not crash diets.`,
+    );
   }
 
   return {
@@ -175,8 +100,9 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
       themes: perspective.themes,
     },
     lifeExpectancy,
+    pillars,
     summary: summaryParts.join(" — ") + ".",
-    actions: [...new Set(actions)].slice(0, plan === "plus" ? 10 : 5),
+    actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
     watchouts: [...new Set(watchouts)].slice(0, 8),
     whenToSeekCare: [
       "New or worsening symptoms, unexplained weight change, chest pain, or mood crisis.",
@@ -188,20 +114,43 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   };
 }
 
-function buildPrompt(plan: PlanId, m: MetricsInput): string {
+function uniquePush(items: string[], extra: string): string[] {
+  return [...new Set([...items, extra])].slice(0, 6);
+}
+
+function parsePillar(
+  raw: unknown,
+  fallback: PillarsPlan["rest"],
+): PillarsPlan["rest"] {
+  if (!raw || typeof raw !== "object") return fallback;
+  const o = raw as Record<string, unknown>;
+  return {
+    focus: typeof o.focus === "string" ? o.focus : fallback.focus,
+    weeklyTarget: typeof o.weeklyTarget === "string" ? o.weeklyTarget : fallback.weeklyTarget,
+    items: Array.isArray(o.items) ? o.items.map(String).slice(0, 6) : fallback.items,
+  };
+}
+
+function buildPrompt(plan: PlanId, m: MetricsInput, pillars: PillarsPlan): string {
   const perspectiveId = resolvePerspective(m.perspective);
   const p = PERSPECTIVES[perspectiveId];
   return `You are a cautious DIY wellness coach for VitalGauge.
 You MUST NOT diagnose, prescribe, cure, or claim to replace a licensed clinician.
-Frame suggestions as educational habits inspired by themes often discussed in alternative/functional wellness education (${p.label}): ${p.themes.join("; ")}.
+The user just completed demographics/metrics. Return a 7-day educational plan under Rest, Nutrition, and Exercise.
+Frame suggestions using themes often discussed in alternative/functional wellness education (${p.label}): ${p.themes.join("; ")}.
 Never claim affiliation with Dr. Berg, Dr. Ekberg, Dr. Axe, Dr. Jockers, Dr. Clark, or Jane Oelke / Natural Choices.
-If DIY saliva/urine pH is present, treat it as optional self-tracking for stress-pattern curiosity only — not disease diagnosis.
-Do not invent life-expectancy numbers; the app computes those separately.
-Return concise JSON only with keys: summary (string), actions (string[]), watchouts (string[]), whenToSeekCare (string[]).
+If sleep < 6 or stress >= 8, prioritize Rest and keep Exercise easy; block aggressive fasting.
+Do not invent life-expectancy numbers.
+Return concise JSON with keys:
+- summary (string)
+- pillars: { rest: {focus, weeklyTarget, items[]}, nutrition: {focus, weeklyTarget, items[]}, exercise: {focus, weeklyTarget, items[]} }
+- watchouts (string[])
+- whenToSeekCare (string[])
+You may refine this draft pillars JSON: ${JSON.stringify(pillars)}
 Plan tier: ${plan}
 Metrics JSON: ${JSON.stringify(m)}
-Always include caution consistent with: ${MEDICAL_DISCLAIMER}
-Also respect: ${LENS_DISCLAIMER}`;
+Disclaimer context: ${MEDICAL_DISCLAIMER}
+Lens: ${LENS_DISCLAIMER}`;
 }
 
 export async function generateAdvice(
@@ -227,9 +176,9 @@ export async function generateAdvice(
           {
             role: "system",
             content:
-              "You produce general wellness education only. Prefer food, sleep, stress, movement, and clean-living habits. Never invent clinical diagnoses from pH strips or alternative theories.",
+              "You produce general wellness education only as Rest, Nutrition, and Exercise plans. Never invent clinical diagnoses from pH strips or alternative theories.",
           },
-          { role: "user", content: buildPrompt(plan, m) },
+          { role: "user", content: buildPrompt(plan, m, fallback.pillars) },
         ],
       }),
     });
@@ -241,15 +190,26 @@ export async function generateAdvice(
     const content = data.choices?.[0]?.message?.content;
     if (!content) return fallback;
 
-    const parsed = JSON.parse(content) as Partial<AdviceResult>;
+    const parsed = JSON.parse(content) as Partial<AdviceResult> & {
+      pillars?: Partial<PillarsPlan>;
+    };
+
+    const pillars: PillarsPlan = {
+      horizon: "7-day",
+      rest: parsePillar(parsed.pillars?.rest, fallback.pillars.rest),
+      nutrition: parsePillar(parsed.pillars?.nutrition, fallback.pillars.nutrition),
+      exercise: parsePillar(parsed.pillars?.exercise, fallback.pillars.exercise),
+    };
+
     return {
       disclaimer: MEDICAL_DISCLAIMER,
       lensDisclaimer: LENS_DISCLAIMER,
       lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
       perspective: fallback.perspective,
       lifeExpectancy: fallback.lifeExpectancy,
+      pillars,
       summary: typeof parsed.summary === "string" ? parsed.summary : fallback.summary,
-      actions: Array.isArray(parsed.actions) ? parsed.actions.map(String).slice(0, 10) : fallback.actions,
+      actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
       watchouts: Array.isArray(parsed.watchouts)
         ? parsed.watchouts.map(String).slice(0, 8)
         : fallback.watchouts,

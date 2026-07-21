@@ -32,6 +32,9 @@
       <section class="section">
         <h2>Your metrics</h2>
         <p class="sub" id="plan-sub">Loading plan limits…</p>
+        <p class="muted" style="margin: -0.75rem 0 1.25rem">
+          Enter your demographics, then get a detailed <strong>Rest · Nutrition · Exercise</strong> plan.
+        </p>
 
         <form id="metrics-form" class="panel">
           <div class="form-grid">
@@ -134,7 +137,7 @@
           </div>
 
           <div class="form-actions">
-            <button class="btn btn-primary" type="submit" id="submit-btn">Get guidance</button>
+            <button class="btn btn-primary" type="submit" id="submit-btn">Get my 7-day plan</button>
             <a class="btn btn-ghost" href="/disclaimer.html">Read disclaimer</a>
           </div>
           <p class="error" id="form-error" hidden></p>
@@ -142,11 +145,36 @@
 
         <div class="result" id="result" hidden>
           <article class="panel">
-            <h3>Summary</h3>
+            <h3>Your plan</h3>
             <p id="out-summary"></p>
             <p class="muted" id="out-meta"></p>
             <p class="badge" id="out-lens" hidden></p>
           </article>
+
+          <div class="pillars" id="out-pillars" hidden>
+            <p class="pillars-intro muted">After your demographics, here is a detailed 7-day DIY plan.</p>
+            <div class="pillars-grid">
+              <article class="panel pillar-card" data-pillar="rest">
+                <p class="badge">Rest</p>
+                <h3 id="out-rest-focus"></h3>
+                <p class="muted" id="out-rest-target"></p>
+                <ul id="out-rest-items"></ul>
+              </article>
+              <article class="panel pillar-card" data-pillar="nutrition">
+                <p class="badge">Nutrition</p>
+                <h3 id="out-nutrition-focus"></h3>
+                <p class="muted" id="out-nutrition-target"></p>
+                <ul id="out-nutrition-items"></ul>
+              </article>
+              <article class="panel pillar-card" data-pillar="exercise">
+                <p class="badge">Exercise</p>
+                <h3 id="out-exercise-focus"></h3>
+                <p class="muted" id="out-exercise-target"></p>
+                <ul id="out-exercise-items"></ul>
+              </article>
+            </div>
+          </div>
+
           <article class="panel" id="out-life-wrap" hidden>
             <h3>Life expectancy (illustrative)</h3>
             <p id="out-life-summary" class="muted"></p>
@@ -169,8 +197,8 @@
             <h3>Lens themes</h3>
             <ul id="out-themes"></ul>
           </article>
-          <article class="panel">
-            <h3>Try this</h3>
+          <article class="panel" id="out-actions-wrap" hidden>
+            <h3>Quick recap</h3>
             <ul id="out-actions"></ul>
           </article>
           <article class="panel">
