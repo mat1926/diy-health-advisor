@@ -32,8 +32,8 @@ Pick **ADAM or EVE** by sex — not both unless a clinician directs.
 | Amino acids | ⚠️ Via protein | Whey supplies EAAs; no lab measurement |
 | Vitamins | ⚠️ Supplement path | Multi + D3; not the same as food RDAs / labs |
 | Minerals | ⚠️ Supplement path | Multi covers many; sodium/potassium still mostly food |
-| Saliva pH | ❌ | Need pH strips |
-| Urine pH | ❌ | Need pH strips |
+| Saliva pH | ❌ | Need saliva pH strips |
+| Urine Multistix 10 SG | ⚠️ Add-on | [B06WCZVMLC](https://www.amazon.com/dp/B06WCZVMLC) Siemens Multistix 10 SG → app demographics pads |
 | Resting HR | ❌ | Need pulse check / HR monitor |
 | BP seated | ❌ | Need BP cuff |
 | BP upon standing | ❌ | Need BP cuff + protocol |
@@ -77,14 +77,15 @@ Pick **ADAM or EVE** by sex — not both unless a clinician directs.
 
 Minimum **measurement add-ons** (not in the 5 ASINs):
 
-1. **Urine + saliva pH strips** (wide-range, e.g. 4.5–9)  
-2. **Upper-arm BP monitor** (for seated + standing orthostatic checks)  
-3. **Way to get resting HR** (watch, fingertip pulse ox, or 60-second pulse)  
-4. **Bathroom scale** (if weight isn’t already known)  
-5. Optional: **fitness tracker** or phone walk tracking for exercise kcal  
-6. Optional: **lower-dose Vitamin D3 (e.g. 1,000–2,000 IU)** if not using labs for 10,000 IU  
+1. **Siemens Multistix 10 SG** ([B06WCZVMLC](https://www.amazon.com/dp/B06WCZVMLC)) — log all 10 pads in VitalGauge demographics  
+2. **Saliva pH strips** (wide-range, e.g. 4.5–9)  
+3. **Upper-arm BP monitor** (for seated + standing orthostatic checks)  
+4. **Way to get resting HR** (watch, fingertip pulse ox, or 60-second pulse)  
+5. **Bathroom scale** (if weight isn’t already known)  
+6. Optional: **fitness tracker** or phone walk tracking for exercise kcal  
+7. Optional: **lower-dose Vitamin D3 (e.g. 1,000–2,000 IU)** if not using labs for 10,000 IU  
 
-Without (1)–(3), VitalGauge’s free vitals/pH inputs stay empty or estimated.
+Without Multistix + BP/HR tools, VitalGauge’s free vitals/urine inputs stay empty or estimated.
 
 ---
 

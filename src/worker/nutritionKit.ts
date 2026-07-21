@@ -159,7 +159,7 @@ export function buildNutritionKitPlan(
   }
 
   const gaps = [
-    "No saliva/urine pH strips, BP cuff, or HR tool in this kit.",
+    "No saliva pH strips, BP cuff, or HR tool in this kit — add Multistix 10 SG for urine pads.",
     "Carbs, fat, sodium, and potassium still come mostly from food.",
     "High-dose D3 is not aligned with typical DIY educational IU targets.",
     "Supplements are not a substitute for clinical care or bloodwork.",

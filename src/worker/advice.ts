@@ -57,6 +57,66 @@ function phWatchouts(m: MetricsInput, watchouts: string[]) {
   }
 }
 
+function multistixWatchouts(m: MetricsInput, watchouts: string[]) {
+  const hasAny =
+    m.urineGlucose != null ||
+    m.urineBilirubin != null ||
+    m.urineKetone != null ||
+    m.urineSpecificGravity != null ||
+    m.urineBlood != null ||
+    m.urineProtein != null ||
+    m.urineUrobilinogen != null ||
+    m.urineNitrite != null ||
+    m.urineLeukocytes != null ||
+    m.urinePh != null;
+  if (!hasAny) return;
+
+  watchouts.push(
+    "Multistix-style urine pads are DIY self-tracking only — not a lab urinalysis or diagnosis. Follow the bottle timing/color chart; abnormal pads warrant clinician follow-up.",
+  );
+
+  if (m.urineNitrite === "positive" || (m.urineLeukocytes && m.urineLeukocytes !== "negative")) {
+    watchouts.push(
+      "Leukocyte and/or nitrite pads that are not negative can accompany urinary infection symptoms — seek clinical care for pain, fever, or blood in urine.",
+    );
+  }
+  if (m.urineBlood && m.urineBlood !== "negative") {
+    watchouts.push(
+      "Blood on a home urine strip needs clinical evaluation (especially with pain, fever, or visible blood) — this app does not diagnose hematuria.",
+    );
+  }
+  if (m.urineGlucose && m.urineGlucose !== "negative") {
+    watchouts.push(
+      "Glucose on a urine strip is educational context only; discuss with a clinician, especially if you have diabetes risk, thirst, or unexplained weight change.",
+    );
+  }
+  if (m.urineProtein && m.urineProtein !== "negative" && m.urineProtein !== "trace") {
+    watchouts.push(
+      "Protein beyond trace on DIY strips should be confirmed clinically — many benign and serious causes exist.",
+    );
+  }
+  if (m.urineBilirubin && m.urineBilirubin !== "negative") {
+    watchouts.push(
+      "Bilirubin on a urine strip is not normal on many charts — ask a clinician, especially with dark urine or jaundice concerns.",
+    );
+  }
+  if (m.urineUrobilinogen && m.urineUrobilinogen !== "0.2" && m.urineUrobilinogen !== "1") {
+    watchouts.push(
+      "Higher urobilinogen pad readings are worth mentioning to a clinician with your full strip log.",
+    );
+  }
+  if (m.urineKetone && m.urineKetone !== "negative" && m.urineKetone !== "trace") {
+    watchouts.push(
+      "Moderate/large ketones on DIY strips can have many contexts (low-carb diet, illness, fasting). Seek urgent care if you feel very ill, vomiting, or confused.",
+    );
+  }
+  if (typeof m.urineSpecificGravity === "number" && m.urineSpecificGravity >= 1.03) {
+    watchouts.push(
+      "Very concentrated urine SG on a strip often tracks low fluid intake — nudge hydration unless a clinician has other guidance.",
+    );
+  }
+}
+
 function vitalsWatchouts(m: MetricsInput, watchouts: string[]) {
   if (typeof m.restingHeartRate === "number" && m.restingHeartRate > 100) {
     watchouts.push(
@@ -126,6 +186,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   }
 
   phWatchouts(m, watchouts);
+  multistixWatchouts(m, watchouts);
   vitalsWatchouts(m, watchouts);
 
   if (plan === "plus") {

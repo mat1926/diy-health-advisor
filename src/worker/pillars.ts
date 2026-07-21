@@ -261,9 +261,9 @@ function buildNutrition(
       break;
   }
 
-  if (m.salivaPh != null || m.urinePh != null) {
+  if (m.salivaPh != null || m.urinePh != null || m.urineGlucose != null || m.urineNitrite != null) {
     items.push(
-      "DIY pH strips are for self-tracking context only — use food/hydration notes, not self-diagnosis.",
+      "DIY saliva pH / Multistix urine pads are for self-tracking context only — use food/hydration notes, not self-diagnosis.",
     );
   }
 

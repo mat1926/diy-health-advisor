@@ -191,6 +191,7 @@ async function boot() {
       "standingBpDiastolic",
       "salivaPh",
       "urinePh",
+      "urineSpecificGravity",
       "sleepHours",
       "stressLevel",
       "stepsPerDay",
@@ -198,6 +199,18 @@ async function boot() {
     ]) {
       if (payload[key] === "" || payload[key] == null) delete payload[key];
       else if (payload[key] != null) payload[key] = Number(payload[key]);
+    }
+    for (const key of [
+      "urineGlucose",
+      "urineBilirubin",
+      "urineKetone",
+      "urineBlood",
+      "urineProtein",
+      "urineUrobilinogen",
+      "urineNitrite",
+      "urineLeukocytes",
+    ]) {
+      if (payload[key] === "" || payload[key] == null) delete payload[key];
     }
 
     const btn = document.getElementById("submit-btn");

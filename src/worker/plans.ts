@@ -19,7 +19,29 @@ export const FREE_FIELDS = [
   "standingBpDiastolic",
   "salivaPh",
   "urinePh",
+  "urineGlucose",
+  "urineBilirubin",
+  "urineKetone",
+  "urineSpecificGravity",
+  "urineBlood",
+  "urineProtein",
+  "urineUrobilinogen",
+  "urineNitrite",
+  "urineLeukocytes",
 ] as const;
+
+/** Siemens Multistix 10 SG–style pad readouts (educational DIY logging). */
+export const URINE_PAD_LEVEL = ["negative", "trace", "small", "moderate", "large"] as const;
+export const URINE_GLUCOSE = ["negative", "trace", "100", "250", "500", "1000"] as const;
+export const URINE_PROTEIN = ["negative", "trace", "30", "100", "300", "2000"] as const;
+export const URINE_UROBILINOGEN = ["0.2", "1", "2", "4", "8"] as const;
+export const URINE_NITRITE = ["negative", "positive"] as const;
+
+export type UrinePadLevel = (typeof URINE_PAD_LEVEL)[number];
+export type UrineGlucose = (typeof URINE_GLUCOSE)[number];
+export type UrineProtein = (typeof URINE_PROTEIN)[number];
+export type UrineUrobilinogen = (typeof URINE_UROBILINOGEN)[number];
+export type UrineNitrite = (typeof URINE_NITRITE)[number];
 
 export const PLUS_FIELDS = [
   ...FREE_FIELDS,
@@ -43,7 +65,7 @@ export const PLAN_LIMITS = {
     features: [
       "Basic metrics (age, height ft/in, weight lbs, activity, goal)",
       "Vitals: resting HR, blood pressure, BP upon standing",
-      "DIY saliva & urine pH",
+      "DIY saliva pH + Multistix 10 SG urine pads",
       "CDC-style or alternative-doctors plan styles",
       "3 advice runs per day",
       "Always-visible medical disclaimer",
@@ -84,6 +106,16 @@ export type MetricsInput = {
   waterLiters?: number;
   salivaPh?: number;
   urinePh?: number;
+  /** Multistix 10 SG pads (optional DIY strip log). */
+  urineGlucose?: UrineGlucose;
+  urineBilirubin?: UrinePadLevel;
+  urineKetone?: UrinePadLevel;
+  urineSpecificGravity?: number;
+  urineBlood?: UrinePadLevel;
+  urineProtein?: UrineProtein;
+  urineUrobilinogen?: UrineUrobilinogen;
+  urineNitrite?: UrineNitrite;
+  urineLeukocytes?: UrinePadLevel;
   notes?: string;
 };
 
@@ -164,6 +196,16 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
   num("waterLiters", 0, 20);
   num("salivaPh", 4.5, 8.5);
   num("urinePh", 4.5, 9.0);
+  num("urineSpecificGravity", 1.0, 1.04);
+
+  str("urineGlucose", URINE_GLUCOSE);
+  str("urineBilirubin", URINE_PAD_LEVEL);
+  str("urineKetone", URINE_PAD_LEVEL);
+  str("urineBlood", URINE_PAD_LEVEL);
+  str("urineProtein", URINE_PROTEIN);
+  str("urineUrobilinogen", URINE_UROBILINOGEN);
+  str("urineNitrite", URINE_NITRITE);
+  str("urineLeukocytes", URINE_PAD_LEVEL);
 
   if (allowed.has("heightCm") || allowed.has("weightKg")) {
     const { heightCm, weightKg } = resolveHeightWeight(raw);
