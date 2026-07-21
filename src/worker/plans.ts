@@ -30,6 +30,7 @@ export const FREE_FIELDS = [
   "urineLeukocytes",
   "calorieAdjust",
   "exerciseBonusKcal",
+  "reviewDoctor",
 ] as const;
 
 /** Siemens Multistix 10 SG–style pad readouts (educational DIY logging). */
@@ -122,6 +123,8 @@ export type MetricsInput = {
   calorieAdjust?: number;
   /** Extra intentional exercise burn kcal/day for forecast tuning. */
   exerciseBonusKcal?: number;
+  /** Filter doctor×metric review: berg|ekberg|axe|jockers|clark|all */
+  reviewDoctor?: string;
   notes?: string;
 };
 
@@ -231,6 +234,13 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
 
   if (allowed.has("notes") && typeof raw.notes === "string") {
     out.notes = raw.notes.trim().slice(0, 500);
+  }
+
+  if (allowed.has("reviewDoctor") && typeof raw.reviewDoctor === "string") {
+    const d = raw.reviewDoctor.trim().toLowerCase();
+    if (["all", "berg", "ekberg", "axe", "jockers", "clark"].includes(d)) {
+      out.reviewDoctor = d;
+    }
   }
 
   return out;

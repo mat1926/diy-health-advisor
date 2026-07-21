@@ -121,6 +121,23 @@
               Saliva pH (DIY strip)
               <input name="salivaPh" type="number" min="4.5" max="8.5" step="0.1" inputmode="decimal" placeholder="e.g. 6.8" />
             </label>
+            <label style="grid-column: 1 / -1">
+              Review alternative doctor lens (optional)
+              <select name="reviewDoctor" id="review-doctor">
+                <option value="all" selected>All alternative doctors</option>
+                <option value="berg">Dr Berg (metabolic)</option>
+                <option value="ekberg">Dr Ekberg (metabolic fitness)</option>
+                <option value="axe">Dr Axe (food-first)</option>
+                <option value="jockers">Dr Jockers (functional)</option>
+                <option value="clark">Dr Clark (clean living)</option>
+              </select>
+            </label>
+            <p class="muted" style="grid-column: 1 / -1; margin: 0; font-size: 0.9rem">
+              Educational themes only — not affiliated with any clinician.
+              <button type="button" class="btn btn-ghost" id="btn-demo-vitals" style="margin-left: 0.5rem">
+                Load demo: high BP · low saliva pH · orthostatic drop
+              </button>
+            </p>
           </div>
 
           <div class="form-section" style="grid-column: 1 / -1; margin-top: 0.5rem">
@@ -295,6 +312,34 @@
               </article>
             </div>
           </div>
+
+          <article class="panel" id="out-doctor-wrap" hidden>
+            <h3>Alternative doctor × metric review</h3>
+            <p id="out-doctor-demo" class="badge" hidden></p>
+            <p class="muted" id="out-doctor-intro">
+              Matched findings from your vitals, with educational recommendations per doctor lens.
+            </p>
+            <h3 style="margin-top: 1rem">Findings</h3>
+            <ul id="out-doctor-findings"></ul>
+            <div class="form-grid" style="margin-top: 1rem">
+              <label>
+                Filter doctor
+                <select id="out-doctor-filter">
+                  <option value="all">All doctors</option>
+                  <option value="berg">Dr Berg</option>
+                  <option value="ekberg">Dr Ekberg</option>
+                  <option value="axe">Dr Axe</option>
+                  <option value="jockers">Dr Jockers</option>
+                  <option value="clark">Dr Clark</option>
+                </select>
+              </label>
+              <div class="form-actions" style="align-items: end">
+                <button type="button" class="btn btn-primary" id="btn-filter-doctor">Apply doctor filter</button>
+              </div>
+            </div>
+            <div id="out-doctor-cards" style="margin-top: 1rem"></div>
+            <p class="muted" id="out-doctor-disclaimer" style="margin-top: 1rem; font-size: 0.9rem"></p>
+          </article>
 
           <article class="panel" id="out-kit-wrap" hidden>
             <h3 id="out-kit-title">Nutrition Kit plan</h3>

@@ -9,6 +9,7 @@ import {
   type PlanId,
 } from "./plans";
 import { lensDisclaimerFor, PERSPECTIVES } from "./perspectives";
+import { listDoctorMetricCatalog } from "./doctorMetricsDb";
 import {
   createPortalSession,
   getEntitlement,
@@ -59,6 +60,8 @@ app.get("/v1/plans", (c) =>
     publishableKey: c.env.STRIPE_PUBLISHABLE_KEY,
   }),
 );
+
+app.get("/v1/doctor-metrics", (c) => c.json(listDoctorMetricCatalog()));
 
 app.get("/v1/me", async (c) => {
   const entitlement = await getEntitlement(c.env, c.get("clientKey"));

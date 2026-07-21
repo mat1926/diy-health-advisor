@@ -235,6 +235,71 @@ function fillProgress(wp, disclaimer) {
   if (exSel && wp.plan) exSel.value = String(wp.plan.exerciseBonusKcal || 0);
 }
 
+function fillDoctorReview(review, disclaimer) {
+  const wrap = document.getElementById("out-doctor-wrap");
+  if (!review || !review.cards?.length) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+
+  const demo = document.getElementById("out-doctor-demo");
+  if (review.demoNote) {
+    demo.hidden = false;
+    demo.textContent = review.demoNote;
+  } else {
+    demo.hidden = true;
+  }
+
+  fillList(
+    document.getElementById("out-doctor-findings"),
+    (review.findings || []).map((f) => `${f.label}: ${f.detail}`),
+  );
+
+  const cardsEl = document.getElementById("out-doctor-cards");
+  cardsEl.innerHTML = "";
+  for (const card of review.cards) {
+    const article = document.createElement("article");
+    article.className = "panel";
+    article.style.marginBottom = "0.75rem";
+    article.dataset.doctor = card.doctor.id;
+    article.dataset.metric = card.metricKey;
+
+    const badge = document.createElement("p");
+    badge.className = "badge";
+    badge.textContent = `${card.doctor.displayName} · ${card.metricLabel}`;
+
+    const title = document.createElement("h4");
+    title.style.margin = "0.35rem 0";
+    title.textContent = card.rec.title;
+
+    const finding = document.createElement("p");
+    finding.className = "muted";
+    finding.textContent = card.findingDetail;
+
+    const rec = document.createElement("p");
+    rec.textContent = card.rec.recommendation;
+
+    const ul = document.createElement("ul");
+    for (const tip of card.rec.lifestyle || []) {
+      const li = document.createElement("li");
+      li.textContent = tip;
+      ul.appendChild(li);
+    }
+
+    const caution = document.createElement("p");
+    caution.className = "muted";
+    caution.style.fontSize = "0.9rem";
+    caution.textContent = `Caution: ${card.rec.caution}`;
+
+    article.append(badge, title, finding, rec, ul, caution);
+    cardsEl.appendChild(article);
+  }
+
+  document.getElementById("out-doctor-disclaimer").textContent =
+    review.disclaimer || disclaimer || "";
+}
+
 function renderAdviceResult(data) {
   document.getElementById("out-summary").textContent = data.summary;
   document.getElementById("out-meta").textContent =
@@ -261,6 +326,7 @@ function renderAdviceResult(data) {
   fillNutritionKit(data.nutritionKit, data.nutritionKitDisclaimer);
   fillFoodPlan(data.foodPlan, data.foodPlanDisclaimer);
   fillProgress(data.weightProgress, data.progressDisclaimer);
+  fillDoctorReview(data.doctorReview, data.doctorDbDisclaimer);
 
   const themesWrap = document.getElementById("out-themes-wrap");
   if (data.perspective?.themes?.length) {
@@ -453,6 +519,51 @@ async function boot() {
       } finally {
         updateBtn.disabled = false;
         updateBtn.textContent = "Update forecast & food plan";
+      }
+    });
+  }
+
+  const demoBtn = document.getElementById("btn-demo-vitals");
+  if (demoBtn) {
+    demoBtn.addEventListener("click", () => {
+      const set = (name, value) => {
+        const el = form.elements.namedItem(name);
+        if (el) el.value = value;
+      };
+      set("bpSystolic", "158");
+      set("bpDiastolic", "96");
+      set("standingBpSystolic", "132");
+      set("standingBpDiastolic", "84");
+      set("salivaPh", "6.0");
+      set("reviewDoctor", "all");
+      const perspective = form.elements.namedItem("perspective");
+      if (perspective) perspective.value = "alternative";
+    });
+  }
+
+  const filterDoctorBtn = document.getElementById("btn-filter-doctor");
+  if (filterDoctorBtn) {
+    filterDoctorBtn.addEventListener("click", async () => {
+      if (!lastPayload) {
+        alert("Submit your metrics first.");
+        return;
+      }
+      const reviewDoctor = document.getElementById("out-doctor-filter").value || "all";
+      const formSel = form.elements.namedItem("reviewDoctor");
+      if (formSel) formSel.value = reviewDoctor;
+      filterDoctorBtn.disabled = true;
+      filterDoctorBtn.textContent = "Filtering…";
+      try {
+        await runAdvice({ ...lastPayload, reviewDoctor }, { scroll: false });
+        document.getElementById("out-doctor-wrap")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      } catch (err) {
+        alert(err.message || "Could not filter doctor review");
+      } finally {
+        filterDoctorBtn.disabled = false;
+        filterDoctorBtn.textContent = "Apply doctor filter";
       }
     });
   }

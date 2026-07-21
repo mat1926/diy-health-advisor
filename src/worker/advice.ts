@@ -36,6 +36,12 @@ import {
   FOOD_PLAN_DISCLAIMER,
   type DetailedFoodPlan,
 } from "./foodPlan";
+import {
+  buildDoctorMetricReview,
+  DOCTOR_DB_DISCLAIMER,
+  resolveDoctorFilter,
+  type DoctorMetricReview,
+} from "./doctorMetricsDb";
 
 export type AdviceResult = {
   disclaimer: string;
@@ -45,6 +51,7 @@ export type AdviceResult = {
   nutritionKitDisclaimer: string;
   foodPlanDisclaimer: string;
   progressDisclaimer: string;
+  doctorDbDisclaimer: string;
   perspective: { id: PerspectiveId; label: string; themes: string[] };
   lifeExpectancy: LifeExpectancyEstimate | null;
   /** Detailed 7-day DIY plan shown after demographics are submitted */
@@ -57,6 +64,8 @@ export type AdviceResult = {
   foodPlan: DetailedFoodPlan | null;
   /** Shown when BMI ≥ 25 — projected loss + modifier hints */
   weightProgress: WeightProgressForecast | null;
+  /** Per-doctor recommendations matched to detected metric findings */
+  doctorReview: DoctorMetricReview | null;
   summary: string;
   actions: string[];
   watchouts: string[];
@@ -182,6 +191,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const nutritionKit = buildNutritionKitPlan(m, targets);
   const foodPlan = buildDetailedFoodPlan(m, targets);
   const weightProgress = buildWeightProgressForecast(m, targets);
+  const doctorReview = buildDoctorMetricReview(m, resolveDoctorFilter(m.reviewDoctor));
   const lifeExpectancy = estimateLifeExpectancy(m);
 
   const summaryParts = [
@@ -192,6 +202,9 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     foodPlan ? "detailed food plan included" : null,
     weightProgress
       ? `progress forecast ~${weightProgress.pace.weeklyLossLb} lb/week (educational)`
+      : null,
+    doctorReview
+      ? `doctor-lens review: ${doctorReview.findings.length} finding(s) · ${doctorReview.cards.length} rec cards`
       : null,
     targets
       ? `targets: sleep ${targets.sleep.hoursTarget}h · ${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
@@ -254,6 +267,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     nutritionKitDisclaimer: NUTRITION_KIT_DISCLAIMER,
     foodPlanDisclaimer: FOOD_PLAN_DISCLAIMER,
     progressDisclaimer: PROGRESS_DISCLAIMER,
+    doctorDbDisclaimer: DOCTOR_DB_DISCLAIMER,
     perspective: {
       id: perspective.id,
       label: perspective.label,
@@ -265,6 +279,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     nutritionKit,
     foodPlan,
     weightProgress,
+    doctorReview,
     summary: summaryParts.join(" — ") + ".",
     actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
     watchouts: [...new Set(watchouts)].slice(0, 8),
@@ -379,6 +394,7 @@ export async function generateAdvice(
       nutritionKitDisclaimer: NUTRITION_KIT_DISCLAIMER,
       foodPlanDisclaimer: FOOD_PLAN_DISCLAIMER,
       progressDisclaimer: PROGRESS_DISCLAIMER,
+      doctorDbDisclaimer: DOCTOR_DB_DISCLAIMER,
       perspective: fallback.perspective,
       lifeExpectancy: fallback.lifeExpectancy,
       pillars,
@@ -386,6 +402,7 @@ export async function generateAdvice(
       nutritionKit: fallback.nutritionKit,
       foodPlan: fallback.foodPlan,
       weightProgress: fallback.weightProgress,
+      doctorReview: fallback.doctorReview,
       summary: typeof parsed.summary === "string" ? parsed.summary : fallback.summary,
       actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
       watchouts: Array.isArray(parsed.watchouts)
