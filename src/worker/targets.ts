@@ -159,7 +159,7 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     } else if (fatStores && fatStores.excessLb > 0 && fatStores.dailyDrawKcal > 0) {
       fromFatStoresKcal = fatStores.dailyDrawKcal;
       dailyTarget = Math.max(1200, Math.round(tdee - fromFatStoresKcal));
-      goalAdjustment = `Alternative plan: food ≈ ${dailyTarget} kcal; ~${fromFatStoresKcal} kcal/day assumed from fat stores (~${fatStores.excessLb} lb over ideal BMI ${fatStores.idealBmi}). ${fatStores.reservesLine} Hit protein, vitamins, minerals, and amino acids — carbs/fat from food are flexible.`;
+      goalAdjustment = `Alternative plan: protein is the food goal; food ≈ ${dailyTarget} kcal; ~${fromFatStoresKcal} kcal/day assumed from fat stores (~${fatStores.excessLb} lb over ideal BMI ${fatStores.idealBmi}). ${fatStores.reservesLine} Hit protein, vitamins, minerals, and amino acids — carbs/fat from food are flexible.`;
     } else {
       dailyTarget = Math.max(1200, Math.round(tdee - 400));
       fromFatStoresKcal = Math.max(0, tdee - dailyTarget);

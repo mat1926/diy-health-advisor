@@ -210,7 +210,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
       ? `doctor-lens review: ${doctorReview.findings.length} finding(s) · ${doctorReview.cards.length} rec cards`
       : null,
     targets
-      ? `targets: sleep ${targets.sleep.hoursTarget}h · ${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
+      ? `targets: sleep ${targets.sleep.hoursTarget}h · protein ${targets.macros.proteinG}g (goal) · food ~${targets.calories.dailyTarget} kcal`
       : null,
     `${perspective.shortName} lens`,
     `age ${m.age ?? "n/a"}, activity ${m.activityLevel ?? "n/a"}, goal ${goal}`,
@@ -253,8 +253,8 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     pillars.rest.weeklyTarget = `Sleep ${targets.sleep.hoursTarget}h (band ${targets.sleep.hoursMin}–${targets.sleep.hoursMax}) · wake ±30 min · daily downshift`;
     pillars.nutrition.weeklyTarget =
       targets.priorityFocus === "alt_protein_micros"
-        ? `${targets.calories.dailyTarget} kcal food · PROTEIN ${targets.macros.proteinG}g · ${targets.fatStores?.reservesLine ?? "vitamins/minerals/AA"}`
-        : `${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g · carbs ${targets.macros.carbsG}g · fat ${targets.macros.fatG}g · water ~${targets.macros.waterLiters}L`;
+        ? `PROTEIN ${targets.macros.proteinG}g (goal) · vitamins/minerals/AA · food ~${targets.calories.dailyTarget} kcal · ${targets.fatStores?.reservesLine ?? "carbs/fat flexible"}`
+        : `Protein ${targets.macros.proteinG}g (goal) · food ~${targets.calories.dailyTarget} kcal · carbs ${targets.macros.carbsG}g · fat ${targets.macros.fatG}g · water ~${targets.macros.waterLiters}L`;
     pillars.exercise.weeklyTarget = `~${targets.exercise.dailyBurnTargetKcal} kcal/day movement burn · ~${targets.exercise.weeklyBurnTargetKcal} kcal/week`;
   }
 

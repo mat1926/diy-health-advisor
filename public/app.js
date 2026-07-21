@@ -60,11 +60,16 @@ function fillTargets(t, disclaimer) {
   document.getElementById("out-t-sleep").textContent = `${t.sleep.hoursTarget} hrs`;
   document.getElementById("out-t-sleep-detail").textContent =
     `Band ${t.sleep.hoursMin}–${t.sleep.hoursMax} hrs / night`;
-  document.getElementById("out-t-cal").textContent = `${t.calories.dailyTarget} kcal`;
+
+  const calBadge = document.getElementById("out-t-cal-badge");
+  if (calBadge) calBadge.textContent = "Protein goal";
+  document.getElementById("out-t-cal").textContent = `${t.macros.proteinG} g`;
   const calDetail =
-    t.calories.fromFatStoresKcal && t.calories.fromFatStoresKcal > 0
-      ? `Food ~${t.calories.dailyTarget} · from fat stores ~${t.calories.fromFatStoresKcal} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`
-      : `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · ${t.calories.goalAdjustment}`;
+    t.priorityFocus === "alt_protein_micros"
+      ? t.calories.fromFatStoresKcal && t.calories.fromFatStoresKcal > 0
+        ? `Primary goal · food ~${t.calories.dailyTarget} kcal · from fat stores ~${t.calories.fromFatStoresKcal} · TDEE ~${t.calories.tdee}`
+        : `Primary goal · food ~${t.calories.dailyTarget} kcal · TDEE ~${t.calories.tdee}`
+      : `BMR ~${t.calories.bmr} · TDEE ~${t.calories.tdee} · food ~${t.calories.dailyTarget} kcal · ${t.calories.goalAdjustment}`;
   document.getElementById("out-t-cal-detail").textContent = calDetail;
   const intro = document.getElementById("out-targets-intro");
   if (intro) {
@@ -136,7 +141,7 @@ function fillNutritionKit(kit, disclaimer) {
   document.getElementById("out-kit-summary").textContent = kit.summary || "";
   document.getElementById("out-kit-protein").textContent = `${kit.daily.proteinTargetG} g`;
   document.getElementById("out-kit-protein-detail").textContent =
-    `Food ~${kit.daily.proteinFromFoodG}g + whey ~${kit.daily.proteinFromWheyG}g · ${kit.daily.caloriesTarget} kcal/day`;
+    `Food ~${kit.daily.proteinFromFoodG}g + whey ~${kit.daily.proteinFromWheyG}g (protein is the kit goal)`;
   document.getElementById("out-kit-whey").textContent = `${kit.daily.wheyScoops} scoop(s)`;
   document.getElementById("out-kit-whey-detail").textContent = "Confirm grams on your whey label";
   document.getElementById("out-kit-fluid").textContent = `~${kit.daily.waterLiters} L`;
