@@ -7,6 +7,7 @@ import {
 import {
   LENS_DISCLAIMER,
   PERSPECTIVES,
+  CDC_NOTE,
   resolvePerspective,
   type PerspectiveId,
 } from "./perspectives";
@@ -73,6 +74,9 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     "Do not start/stop prescription medication, herbs, or cleanses based on this tool alone.",
     LENS_DISCLAIMER,
   ];
+  if (perspectiveId === "cdc") {
+    watchouts.push(CDC_NOTE);
+  }
 
   if (plan === "plus") {
     phWatchouts(m, watchouts);
@@ -153,8 +157,9 @@ function buildPrompt(plan: PlanId, m: MetricsInput, pillars: PillarsPlan): strin
   return `You are a cautious DIY wellness coach for VitalGauge.
 You MUST NOT diagnose, prescribe, cure, or claim to replace a licensed clinician.
 The user just completed demographics/metrics. Return a 7-day educational plan under Rest, Nutrition, and Exercise.
-Frame suggestions using themes often discussed in alternative/functional wellness education (${p.label}): ${p.themes.join("; ")}.
-Never claim affiliation with Dr. Berg, Dr. Ekberg, Dr. Axe, Dr. Jockers, Dr. Clark, or Jane Oelke / Natural Choices.
+Frame suggestions using educational themes (${p.label}): ${p.themes.join("; ")}.
+Do not name private clinicians. You may say “CDC-style” or “alternative doctors” generically.
+Never claim affiliation with the CDC or any private clinician.
 If sleep < 6 or stress >= 8, prioritize Rest and keep Exercise easy; block aggressive fasting.
 Do not invent life-expectancy numbers or numeric nutrient targets; the app computes those separately.
 Return concise JSON with keys:

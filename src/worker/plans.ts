@@ -1,3 +1,5 @@
+import { resolvePerspective, type PerspectiveId } from "./perspectives";
+
 export type PlanId = "free" | "plus";
 
 export const MEDICAL_DISCLAIMER = `VitalGauge provides general wellness information for educational and DIY self-tracking purposes only. It is not medical advice, diagnosis, or treatment, and it is not a substitute for professional care from a licensed clinician. Do not use this tool for emergencies. If you think you may be having a medical emergency, call your local emergency number. Always talk with a qualified healthcare professional before changing diet, exercise, medication, or treatment.`;
@@ -36,7 +38,7 @@ export const PLAN_LIMITS = {
     fields: FREE_FIELDS,
     features: [
       "Basic metrics (age, height ft/in, weight lbs, activity, goal)",
-      "Choose an alternative wellness lens (Berg, Ekberg, Axe, Jockers, Clark, or blend)",
+      "Choose CDC-style habits or an alternative-doctors lens",
       "Short DIY wellness summary",
       "3 advice runs per day",
       "Always-visible medical disclaimer",
@@ -66,7 +68,7 @@ export type MetricsInput = {
   weightKg?: number;
   activityLevel?: "sedentary" | "light" | "moderate" | "active" | "very_active";
   primaryGoal?: "energy" | "sleep" | "weight" | "strength" | "stress" | "general";
-  perspective?: "blend" | "berg" | "ekberg" | "axe" | "jockers" | "clark";
+  perspective?: PerspectiveId;
   sleepHours?: number;
   stressLevel?: number;
   restingHeartRate?: number;
@@ -160,7 +162,10 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
   str("sex", ["female", "male", "other", "prefer_not"] as const);
   str("activityLevel", ["sedentary", "light", "moderate", "active", "very_active"] as const);
   str("primaryGoal", ["energy", "sleep", "weight", "strength", "stress", "general"] as const);
-  str("perspective", ["blend", "berg", "ekberg", "axe", "jockers", "clark"] as const);
+
+  if (allowed.has("perspective")) {
+    out.perspective = resolvePerspective(raw.perspective);
+  }
 
   if (allowed.has("notes") && typeof raw.notes === "string") {
     out.notes = raw.notes.trim().slice(0, 500);

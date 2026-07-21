@@ -94,26 +94,38 @@ function buildRest(
     );
   }
 
-  // Lens accents
+  // Lens accents (no named clinicians in user-facing copy)
   switch (perspective) {
-    case "berg":
+    case "cdc":
       items.push(
-        locked
-          ? "Berg-style note: skip hard fasting while sleep/stress are strained — recovery first."
-          : "Berg-style note: only consider a gentle eating window after sleep feels steadier.",
+        "CDC-style note: most adults do better with at least 7 hours of sleep most nights.",
       );
       break;
-    case "ekberg":
-      items.push("Ekberg-style note: pair a fixed wake time with morning light for metabolic rhythm.");
+    case "metabolic":
+      items.push(
+        locked
+          ? "Alternative metabolic note: skip hard fasting while sleep/stress are strained — recovery first."
+          : "Alternative metabolic note: only consider a gentle eating window after sleep feels steadier.",
+      );
       break;
-    case "axe":
-      items.push("Axe-style note: keep a simple evening wind-down ritual you can repeat.");
+    case "fitness":
+      items.push("Alternative fitness note: pair a fixed wake time with morning light for daily rhythm.");
       break;
-    case "jockers":
-      items.push("Jockers-style note: schedule a daily nervous-system downshift (breath, prayer, stretch, or quiet walk).");
+    case "food_first":
+      items.push("Alternative food-first note: keep a simple evening wind-down ritual you can repeat.");
       break;
-    case "clark":
-      items.push("Clark-style note: quiet the sleep space — cooler, darker, fewer chemical smells if practical.");
+    case "functional":
+      items.push(
+        "Alternative functional note: schedule a daily nervous-system downshift (breath, prayer, stretch, or quiet walk).",
+      );
+      break;
+    case "clean_living":
+      items.push(
+        "Alternative clean-living note: quiet the sleep space — cooler, darker, fewer harsh chemical smells if practical.",
+      );
+      break;
+    case "alternative":
+      items.push("Alternative doctors note: protect recovery before stacking new diet experiments.");
       break;
     default:
       break;
@@ -198,36 +210,48 @@ function buildNutrition(
   }
 
   switch (perspective) {
-    case "berg":
+    case "cdc":
+      items.push(
+        "CDC-style note: emphasize fruits, vegetables, and cutting back on added sugars and excess sodium.",
+      );
+      if (!locked) {
+        items.push("Keep portions steady; focus on a sustainable eating pattern rather than a short cleanse.");
+      }
+      break;
+    case "metabolic":
       if (!locked) {
         items.push(
-          "Berg-style note: if reducing refined carbs, add leafy greens and electrolytes — don’t crash calories overnight.",
+          "Alternative metabolic note: if reducing refined carbs, add leafy greens and electrolytes — don’t crash calories overnight.",
         );
       }
       break;
-    case "ekberg":
-      items.push("Ekberg-style note: swap one ultra-processed snack for a whole-food option most days.");
+    case "fitness":
+      items.push("Alternative fitness note: swap one ultra-processed snack for a whole-food option most days.");
       break;
-    case "axe":
+    case "food_first":
       items.push(
-        "Axe-style note: cook ≥3 home meals this week; add a fermented food you tolerate if you like.",
+        "Alternative food-first note: cook ≥3 home meals this week; add a fermented food you tolerate if you like.",
       );
       break;
-    case "jockers":
+    case "functional":
       items.push(
-        "Jockers-style note: build an anti-inflammatory plate — colorful plants, quality protein, olive oil or avocado.",
+        "Alternative functional note: build an anti-inflammatory plate — colorful plants, quality protein, olive oil or avocado.",
       );
       if (!locked) {
-        items.push("Optional gentle timing only if recovered (e.g. a mild 12:12 window) — stop if you feel unwell.");
+        items.push(
+          "Optional gentle timing only if recovered (e.g. a mild 12:12 window) — stop if you feel unwell.",
+        );
       }
       break;
-    case "clark":
+    case "clean_living":
       items.push(
-        "Clark-style note: use filtered water if practical and simplify one pantry or personal-care product this week.",
+        "Alternative clean-living note: use filtered water if practical and simplify one pantry or personal-care product this week.",
       );
       break;
+    case "alternative":
+      items.push("Alternative doctors note: reduce sugary drinks and keep hydration steady through the day.");
+      break;
     default:
-      items.push("Blend note: reduce sugary drinks and keep hydration steady through the day.");
       break;
   }
 
@@ -331,20 +355,34 @@ function buildExercise(
   }
 
   switch (perspective) {
-    case "berg":
-      items.push("Berg-style note: walking is a primary tool — keep it consistent.");
+    case "cdc":
+      if (!paused) {
+        weeklyTarget = "≥150 min moderate activity / week · strength 2+ days · break up long sitting";
+        items.push(
+          "CDC-style note: work toward 150 minutes of moderate activity this week (brisk walking counts).",
+          "Include muscle-strengthening on at least 2 days.",
+        );
+      } else {
+        items.push("CDC-style note: keep light walking if able; return to the 150-minute goal when recovered.");
+      }
       break;
-    case "ekberg":
-      items.push("Ekberg-style note: mix strength with easy aerobic work when recovered.");
+    case "metabolic":
+      items.push("Alternative metabolic note: walking is a primary tool — keep it consistent.");
       break;
-    case "axe":
-      items.push("Axe-style note: prefer outdoor walks when weather allows.");
+    case "fitness":
+      items.push("Alternative fitness note: mix strength with easy aerobic work when recovered.");
       break;
-    case "jockers":
-      items.push("Jockers-style note: lift + walk beats random high-intensity add-ons when stressed.");
+    case "food_first":
+      items.push("Alternative food-first note: prefer outdoor walks when weather allows.");
       break;
-    case "clark":
-      items.push("Clark-style note: outdoor walking counts — avoid overtraining as a “fix.”");
+    case "functional":
+      items.push("Alternative functional note: lift + walk beats random high-intensity add-ons when stressed.");
+      break;
+    case "clean_living":
+      items.push("Alternative clean-living note: outdoor walking counts — avoid overtraining as a “fix.”");
+      break;
+    case "alternative":
+      items.push("Alternative doctors note: walk most days and keep two simple strength sessions.");
       break;
     default:
       break;

@@ -132,8 +132,11 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   }
 
   // Lens nudges (mild)
-  if (perspective === "berg" && goal === "weight") {
-    goalAdjustment += " Berg-style lens: keep protein high if lowering refined carbs.";
+  if (perspective === "metabolic" && goal === "weight") {
+    goalAdjustment += " Alternative metabolic lens: keep protein high if lowering refined carbs.";
+  }
+  if (perspective === "cdc" && goal === "weight") {
+    goalAdjustment += " CDC-style lens: favor a modest deficit with produce-forward meals.";
   }
 
   // Exercise burn — portion of TDEE beyond sedentary BMR*1.2
@@ -155,16 +158,19 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
   let proteinPerKg = 1.4;
   if (goal === "strength") proteinPerKg = 1.8;
   if (goal === "weight") proteinPerKg = 1.8;
-  if (perspective === "berg" || perspective === "jockers") proteinPerKg = Math.max(proteinPerKg, 1.6);
+  if (perspective === "metabolic" || perspective === "functional") proteinPerKg = Math.max(proteinPerKg, 1.6);
 
   const proteinG = Math.round(proteinPerKg * m.weightKg);
   let fatPct = 30;
   let carbsPct = 40;
   let proteinPct = Math.round((proteinG * 4 * 100) / dailyTarget);
 
-  if (perspective === "berg") {
+  if (perspective === "metabolic") {
     fatPct = 40;
     carbsPct = Math.max(20, 100 - proteinPct - fatPct);
+  } else if (perspective === "cdc") {
+    fatPct = 30;
+    carbsPct = Math.max(40, 100 - proteinPct - fatPct);
   } else if (goal === "strength") {
     carbsPct = 45;
     fatPct = Math.max(20, 100 - proteinPct - carbsPct);
