@@ -16,6 +16,15 @@ export type FatStoreEstimate = {
   excessLb: number;
   /** Educational: excessLb × 3500 kcal. */
   estimatedStoreKcal: number;
+  /** BMR used for the reserves-days illustration (kcal/day). */
+  bmrKcal: number | null;
+  /**
+   * Days of caloric reserves at BMR:
+   * ((actual − ideal) lb × 3500) ÷ BMR.
+   */
+  daysOfCaloricReserves: number | null;
+  /** User-facing one-liner for the reserves figure. */
+  reservesLine: string;
   /** Suggested daily draw from stores for Alternative plans (kcal/day). */
   dailyDrawKcal: number;
   /** Rough weeks of stores at that daily draw. */
@@ -33,7 +42,7 @@ function kgToLb(kg: number): number {
  */
 export function estimateFatStores(
   m: MetricsInput,
-  opts?: { tdee?: number; maxDailyDrawKcal?: number },
+  opts?: { tdee?: number; bmr?: number; maxDailyDrawKcal?: number },
 ): FatStoreEstimate | null {
   if (!m.heightCm || !m.weightKg) return null;
 
@@ -44,6 +53,25 @@ export function estimateFatStores(
   const currentBmi = bmi(m.heightCm, m.weightKg);
   const excessLb = Math.max(0, Math.round((currentWeightLb - idealWeightLb) * 10) / 10);
   const estimatedStoreKcal = Math.round(excessLb * KCAL_PER_LB_FAT);
+
+  const bmrKcal =
+    opts?.bmr && opts.bmr > 0 ? Math.round(opts.bmr) : null;
+
+  // Days of caloric reserves: excess energy ÷ BMR
+  // = ((actual − ideal) lb × 3500 kcal/lb) ÷ BMR kcal/day
+  const daysOfCaloricReserves =
+    bmrKcal && excessLb > 0
+      ? Math.round((estimatedStoreKcal / bmrKcal) * 10) / 10
+      : excessLb <= 0
+        ? 0
+        : null;
+
+  const reservesLine =
+    excessLb <= 0
+      ? `You have ~0 days of caloric reserves (at or near ideal weight).`
+      : daysOfCaloricReserves != null && bmrKcal
+        ? `You have ~${daysOfCaloricReserves} days of caloric reserves ((${excessLb} lb over ideal × ${KCAL_PER_LB_FAT} kcal/lb) ÷ BMR ${bmrKcal} kcal/day).`
+        : `You have caloric reserves of ~${excessLb} lb over ideal (~${estimatedStoreKcal.toLocaleString()} kcal); BMR needed to convert to days.`;
 
   // Daily draw: prefer ~15–20% of TDEE, capped, and not more than ~1.5–2 lb/week educational
   const tdee = opts?.tdee ?? 2000;
@@ -61,7 +89,7 @@ export function estimateFatStores(
   const summary =
     excessLb <= 0
       ? `At or near ideal BMI ${IDEAL_BMI} (~${idealWeightLb} lb) — little/no excess modeled as mobilizable fat stores.`
-      : `~${excessLb} lb above ideal (~${idealWeightLb} lb at BMI ${IDEAL_BMI}) modeled as ~${estimatedStoreKcal.toLocaleString()} kcal fat stores. Alternative plans may draw ~${dailyDrawKcal} kcal/day from those stores so food mainly covers protein + micronutrients.`;
+      : `~${excessLb} lb above ideal (~${idealWeightLb} lb at BMI ${IDEAL_BMI}) modeled as ~${estimatedStoreKcal.toLocaleString()} kcal fat stores. ${reservesLine} Alternative plans may draw ~${dailyDrawKcal} kcal/day from those stores so food mainly covers protein + micronutrients.`;
 
   return {
     disclaimer: FAT_STORE_DISCLAIMER,
@@ -71,6 +99,9 @@ export function estimateFatStores(
     currentBmi,
     excessLb,
     estimatedStoreKcal,
+    bmrKcal,
+    daysOfCaloricReserves,
+    reservesLine,
     dailyDrawKcal,
     weeksOfStoresAtDraw,
     summary,
