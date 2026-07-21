@@ -26,6 +26,16 @@ import {
   NUTRITION_KIT_DISCLAIMER,
   type NutritionKitPlan,
 } from "./nutritionKit";
+import {
+  buildWeightProgressForecast,
+  PROGRESS_DISCLAIMER,
+  type WeightProgressForecast,
+} from "./progressForecast";
+import {
+  buildDetailedFoodPlan,
+  FOOD_PLAN_DISCLAIMER,
+  type DetailedFoodPlan,
+} from "./foodPlan";
 
 export type AdviceResult = {
   disclaimer: string;
@@ -33,6 +43,8 @@ export type AdviceResult = {
   lifeExpectancyDisclaimer: string;
   targetsDisclaimer: string;
   nutritionKitDisclaimer: string;
+  foodPlanDisclaimer: string;
+  progressDisclaimer: string;
   perspective: { id: PerspectiveId; label: string; themes: string[] };
   lifeExpectancy: LifeExpectancyEstimate | null;
   /** Detailed 7-day DIY plan shown after demographics are submitted */
@@ -41,6 +53,10 @@ export type AdviceResult = {
   targets: DetailedTargets | null;
   /** Concrete plan using the Amazon whey/shaker/multi/D3 kit */
   nutritionKit: NutritionKitPlan | null;
+  /** Full-day food menu meeting macros with kit as base */
+  foodPlan: DetailedFoodPlan | null;
+  /** Shown when BMI ≥ 25 — projected loss + modifier hints */
+  weightProgress: WeightProgressForecast | null;
   summary: string;
   actions: string[];
   watchouts: string[];
@@ -164,12 +180,18 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const pillars = buildPillars(plan, m);
   const targets = buildDetailedTargets(m);
   const nutritionKit = buildNutritionKitPlan(m, targets);
+  const foodPlan = buildDetailedFoodPlan(m, targets);
+  const weightProgress = buildWeightProgressForecast(m, targets);
   const lifeExpectancy = estimateLifeExpectancy(m);
 
   const summaryParts = [
     `7-day DIY plan ready (Rest · Nutrition · Exercise)`,
     nutritionKit
       ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · D3 clinician-gated`
+      : null,
+    foodPlan ? "detailed food plan included" : null,
+    weightProgress
+      ? `progress forecast ~${weightProgress.pace.weeklyLossLb} lb/week (educational)`
       : null,
     targets
       ? `targets: sleep ${targets.sleep.hoursTarget}h · ${targets.calories.dailyTarget} kcal · protein ${targets.macros.proteinG}g`
@@ -230,6 +252,8 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
     targetsDisclaimer: targetsDisclaimerFor(perspectiveId),
     nutritionKitDisclaimer: NUTRITION_KIT_DISCLAIMER,
+    foodPlanDisclaimer: FOOD_PLAN_DISCLAIMER,
+    progressDisclaimer: PROGRESS_DISCLAIMER,
     perspective: {
       id: perspective.id,
       label: perspective.label,
@@ -239,6 +263,8 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
     pillars,
     targets,
     nutritionKit,
+    foodPlan,
+    weightProgress,
     summary: summaryParts.join(" — ") + ".",
     actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
     watchouts: [...new Set(watchouts)].slice(0, 8),
@@ -350,12 +376,16 @@ export async function generateAdvice(
       lensDisclaimer: fallback.lensDisclaimer,
       lifeExpectancyDisclaimer: LIFE_EXPECTANCY_DISCLAIMER,
       targetsDisclaimer: fallback.targetsDisclaimer,
+      nutritionKitDisclaimer: NUTRITION_KIT_DISCLAIMER,
+      foodPlanDisclaimer: FOOD_PLAN_DISCLAIMER,
+      progressDisclaimer: PROGRESS_DISCLAIMER,
       perspective: fallback.perspective,
       lifeExpectancy: fallback.lifeExpectancy,
       pillars,
       targets: fallback.targets,
       nutritionKit: fallback.nutritionKit,
-      nutritionKitDisclaimer: NUTRITION_KIT_DISCLAIMER,
+      foodPlan: fallback.foodPlan,
+      weightProgress: fallback.weightProgress,
       summary: typeof parsed.summary === "string" ? parsed.summary : fallback.summary,
       actions: pillarsToActions(pillars, plan === "plus" ? 8 : 6),
       watchouts: Array.isArray(parsed.watchouts)

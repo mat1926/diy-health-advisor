@@ -131,6 +131,180 @@ function fillNutritionKit(kit, disclaimer) {
     kit.disclaimer || disclaimer || "";
 }
 
+function fillCoverageTable(tableId, rows) {
+  const tbody = document.querySelector(`#${tableId} tbody`);
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  for (const row of rows || []) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${row.name}</td><td>${row.fromPlan} ${row.unit || ""}</td><td>${row.target} ${row.unit || ""}</td><td class="muted">${row.fromMulti || row.note || ""}</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function fillFoodPlan(fp, disclaimer) {
+  const wrap = document.getElementById("out-food-wrap");
+  if (!fp) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  document.getElementById("out-food-title").textContent = fp.title || "Detailed food plan";
+  document.getElementById("out-food-summary").textContent = fp.summary || "";
+  document.getElementById("out-food-kit").textContent =
+    `Kit base: ${fp.kitBase?.wheyScoops ?? 0} whey scoop(s) (~${fp.kitBase?.wheyProteinG ?? 0}g) · ${fp.kitBase?.multi || "multi"} · ${fp.kitBase?.d3Note || ""}`;
+  document.getElementById("out-food-kcal").textContent = `${fp.dayTotals.kcal} kcal`;
+  document.getElementById("out-food-kcal-detail").textContent =
+    `Target ${fp.targets.kcal} · hit ${fp.macroHit.kcalPctOfTarget}%`;
+  document.getElementById("out-food-protein").textContent = `${fp.dayTotals.proteinG} g`;
+  document.getElementById("out-food-protein-detail").textContent =
+    `Target ${fp.targets.proteinG}g · hit ${fp.macroHit.proteinPctOfTarget}%`;
+  document.getElementById("out-food-cf").textContent =
+    `${fp.dayTotals.carbsG}g / ${fp.dayTotals.fatG}g`;
+  document.getElementById("out-food-cf-detail").textContent =
+    `Targets ${fp.targets.carbsG}g carbs · ${fp.targets.fatG}g fat`;
+
+  const mealsEl = document.getElementById("out-food-meals");
+  mealsEl.innerHTML = "";
+  for (const meal of fp.meals || []) {
+    const block = document.createElement("div");
+    block.style.marginBottom = "1rem";
+    const h = document.createElement("h4");
+    h.style.margin = "0 0 0.35rem";
+    h.textContent = `${meal.name} · ${meal.totals.kcal} kcal (P ${meal.totals.proteinG}g · C ${meal.totals.carbsG}g · F ${meal.totals.fatG}g)`;
+    const hint = document.createElement("p");
+    hint.className = "muted";
+    hint.style.margin = "0 0 0.35rem";
+    hint.textContent = meal.timeHint || "";
+    const ul = document.createElement("ul");
+    for (const item of meal.items || []) {
+      const li = document.createElement("li");
+      li.textContent = `${item.name} — ${item.portion} · ${item.kcal} kcal · P${item.proteinG}/C${item.carbsG}/F${item.fatG}${item.kit ? " · kit" : ""}`;
+      ul.appendChild(li);
+    }
+    block.append(h, hint, ul);
+    mealsEl.appendChild(block);
+  }
+
+  fillCoverageTable("out-food-vit", fp.vitamins);
+  fillCoverageTable("out-food-min", fp.minerals);
+  fillCoverageTable("out-food-aa", fp.aminoAcids);
+  fillList(document.getElementById("out-food-shop"), fp.shoppingList || []);
+  fillList(document.getElementById("out-food-tips"), fp.prepTips || []);
+  document.getElementById("out-food-disclaimer").textContent =
+    fp.disclaimer || disclaimer || "";
+}
+
+function fillProgress(wp, disclaimer) {
+  const wrap = document.getElementById("out-progress-wrap");
+  if (!wp) {
+    wrap.hidden = true;
+    return;
+  }
+  wrap.hidden = false;
+  document.getElementById("out-progress-summary").textContent =
+    wp.toHealthyBmi?.summary || "";
+  document.getElementById("out-progress-now").textContent =
+    `${wp.current.weightLb} lb`;
+  document.getElementById("out-progress-now-detail").textContent =
+    `BMI ${wp.current.bmi} · ${wp.current.category}`;
+  document.getElementById("out-progress-pace").textContent =
+    `~${wp.pace.weeklyLossLb} lb/wk`;
+  document.getElementById("out-progress-pace-detail").textContent =
+    `~${wp.pace.monthlyLossLb} lb/mo · deficit ~${wp.plan.dailyDeficitKcal} kcal/day · ${wp.pace.note}`;
+  document.getElementById("out-progress-goal").textContent =
+    wp.toHealthyBmi.estimatedWeeks != null
+      ? `~${wp.toHealthyBmi.estimatedWeeks} wks`
+      : "—";
+  document.getElementById("out-progress-goal-detail").textContent =
+    `${wp.toHealthyBmi.poundsToGo} lb to go · target ~${wp.toHealthyBmi.targetWeightLb} lb`;
+
+  const miles = (wp.milestones || []).map(
+    (m) =>
+      `Week ${m.weeks}: ~${m.weightLb} lb (BMI ${m.bmi}) · lost ~${m.lostLb} lb`,
+  );
+  fillList(document.getElementById("out-progress-milestones"), miles);
+  document.getElementById("out-progress-hint").textContent =
+    wp.modifiersHint || "";
+  document.getElementById("out-progress-disclaimer").textContent =
+    wp.disclaimer || disclaimer || "";
+
+  const calSel = document.getElementById("adj-calories");
+  const exSel = document.getElementById("adj-exercise");
+  if (calSel && wp.plan) calSel.value = String(wp.plan.calorieAdjust || 0);
+  if (exSel && wp.plan) exSel.value = String(wp.plan.exerciseBonusKcal || 0);
+}
+
+function renderAdviceResult(data) {
+  document.getElementById("out-summary").textContent = data.summary;
+  document.getElementById("out-meta").textContent =
+    `Source: ${data.source} · usage ${data.usage?.used}/${data.usage?.limit}`;
+  const lens = document.getElementById("out-lens");
+  if (data.perspective?.label) {
+    lens.hidden = false;
+    lens.textContent = data.perspective.label;
+  } else {
+    lens.hidden = true;
+  }
+
+  const pillarsEl = document.getElementById("out-pillars");
+  if (data.pillars?.rest && data.pillars?.nutrition && data.pillars?.exercise) {
+    pillarsEl.hidden = false;
+    fillPillar("rest", data.pillars.rest);
+    fillPillar("nutrition", data.pillars.nutrition);
+    fillPillar("exercise", data.pillars.exercise);
+  } else {
+    pillarsEl.hidden = true;
+  }
+
+  fillTargets(data.targets, data.targetsDisclaimer);
+  fillNutritionKit(data.nutritionKit, data.nutritionKitDisclaimer);
+  fillFoodPlan(data.foodPlan, data.foodPlanDisclaimer);
+  fillProgress(data.weightProgress, data.progressDisclaimer);
+
+  const themesWrap = document.getElementById("out-themes-wrap");
+  if (data.perspective?.themes?.length) {
+    themesWrap.hidden = false;
+    fillList(document.getElementById("out-themes"), data.perspective.themes);
+  } else {
+    themesWrap.hidden = true;
+  }
+
+  const lifeWrap = document.getElementById("out-life-wrap");
+  const le = data.lifeExpectancy;
+  if (le?.current && le?.ideal) {
+    lifeWrap.hidden = false;
+    document.getElementById("out-life-summary").textContent = le.comparison?.summary || "";
+    document.getElementById("out-life-current").textContent =
+      `~${le.current.expectedAge} yrs expected age`;
+    document.getElementById("out-life-current-detail").textContent =
+      `~${le.current.remainingYears} years remaining · BMI ${le.current.bmi ?? "—"} · adj ${le.current.adjustmentsYears >= 0 ? "+" : ""}${le.current.adjustmentsYears} yrs`;
+    document.getElementById("out-life-ideal").textContent =
+      `~${le.ideal.expectedAge} yrs expected age`;
+    document.getElementById("out-life-ideal-detail").textContent =
+      `~${le.ideal.remainingYears} years remaining · BMI ${le.ideal.bmi}` +
+      (le.ideal.idealWeightLb ? ` (~${le.ideal.idealWeightLb} lbs at your height)` : "");
+    fillList(document.getElementById("out-life-assumptions"), le.ideal.assumptions || []);
+    document.getElementById("out-life-disclaimer").textContent =
+      le.disclaimer || data.lifeExpectancyDisclaimer || "";
+  } else {
+    lifeWrap.hidden = true;
+  }
+
+  const actionsWrap = document.getElementById("out-actions-wrap");
+  if (data.actions?.length) {
+    actionsWrap.hidden = false;
+    fillList(document.getElementById("out-actions"), data.actions);
+  } else {
+    actionsWrap.hidden = true;
+  }
+  fillList(document.getElementById("out-watchouts"), data.watchouts);
+  fillList(document.getElementById("out-care"), data.whenToSeekCare);
+  document.getElementById("out-disclaimer").textContent = data.disclaimer;
+  document.getElementById("out-lens-disclaimer").textContent =
+    data.lensDisclaimer || "";
+}
+
 async function boot() {
   const form = document.getElementById("metrics-form");
   const badge = document.getElementById("plan-badge");
@@ -139,6 +313,7 @@ async function boot() {
   const portalBtn = document.getElementById("portal-btn");
   const errorEl = document.getElementById("form-error");
   const result = document.getElementById("result");
+  let lastPayload = null;
 
   const params = new URLSearchParams(location.search);
   const sessionId = params.get("session_id");
@@ -173,10 +348,7 @@ async function boot() {
     };
   }
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    errorEl.hidden = true;
-    result.hidden = true;
+  function buildPayloadFromForm() {
     const fd = new FormData(form);
     const payload = Object.fromEntries(fd.entries());
     for (const key of [
@@ -196,6 +368,8 @@ async function boot() {
       "stressLevel",
       "stepsPerDay",
       "waterLiters",
+      "calorieAdjust",
+      "exerciseBonusKcal",
     ]) {
       if (payload[key] === "" || payload[key] == null) delete payload[key];
       else if (payload[key] != null) payload[key] = Number(payload[key]);
@@ -212,82 +386,32 @@ async function boot() {
     ]) {
       if (payload[key] === "" || payload[key] == null) delete payload[key];
     }
+    return payload;
+  }
 
+  async function runAdvice(payload, { scroll = true } = {}) {
+    errorEl.hidden = true;
+    const data = await api("/v1/advice", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    lastPayload = { ...payload };
+    renderAdviceResult(data);
+    result.hidden = false;
+    if (scroll) result.scrollIntoView({ behavior: "smooth", block: "start" });
+    return data;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorEl.hidden = true;
+    result.hidden = true;
+    const payload = buildPayloadFromForm();
     const btn = document.getElementById("submit-btn");
     btn.disabled = true;
     btn.textContent = "Working…";
     try {
-      const data = await api("/v1/advice", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-      document.getElementById("out-summary").textContent = data.summary;
-      document.getElementById("out-meta").textContent =
-        `Source: ${data.source} · usage ${data.usage?.used}/${data.usage?.limit}`;
-      const lens = document.getElementById("out-lens");
-      if (data.perspective?.label) {
-        lens.hidden = false;
-        lens.textContent = data.perspective.label;
-      } else {
-        lens.hidden = true;
-      }
-
-      const pillarsEl = document.getElementById("out-pillars");
-      if (data.pillars?.rest && data.pillars?.nutrition && data.pillars?.exercise) {
-        pillarsEl.hidden = false;
-        fillPillar("rest", data.pillars.rest);
-        fillPillar("nutrition", data.pillars.nutrition);
-        fillPillar("exercise", data.pillars.exercise);
-      } else {
-        pillarsEl.hidden = true;
-      }
-
-      fillTargets(data.targets, data.targetsDisclaimer);
-      fillNutritionKit(data.nutritionKit, data.nutritionKitDisclaimer);
-
-      const themesWrap = document.getElementById("out-themes-wrap");
-      if (data.perspective?.themes?.length) {
-        themesWrap.hidden = false;
-        fillList(document.getElementById("out-themes"), data.perspective.themes);
-      } else {
-        themesWrap.hidden = true;
-      }
-
-      const lifeWrap = document.getElementById("out-life-wrap");
-      const le = data.lifeExpectancy;
-      if (le?.current && le?.ideal) {
-        lifeWrap.hidden = false;
-        document.getElementById("out-life-summary").textContent = le.comparison?.summary || "";
-        document.getElementById("out-life-current").textContent =
-          `~${le.current.expectedAge} yrs expected age`;
-        document.getElementById("out-life-current-detail").textContent =
-          `~${le.current.remainingYears} years remaining · BMI ${le.current.bmi ?? "—"} · adj ${le.current.adjustmentsYears >= 0 ? "+" : ""}${le.current.adjustmentsYears} yrs`;
-        document.getElementById("out-life-ideal").textContent =
-          `~${le.ideal.expectedAge} yrs expected age`;
-        document.getElementById("out-life-ideal-detail").textContent =
-          `~${le.ideal.remainingYears} years remaining · BMI ${le.ideal.bmi}` +
-          (le.ideal.idealWeightLb ? ` (~${le.ideal.idealWeightLb} lbs at your height)` : "");
-        fillList(document.getElementById("out-life-assumptions"), le.ideal.assumptions || []);
-        document.getElementById("out-life-disclaimer").textContent =
-          le.disclaimer || data.lifeExpectancyDisclaimer || "";
-      } else {
-        lifeWrap.hidden = true;
-      }
-
-      const actionsWrap = document.getElementById("out-actions-wrap");
-      if (data.actions?.length) {
-        actionsWrap.hidden = false;
-        fillList(document.getElementById("out-actions"), data.actions);
-      } else {
-        actionsWrap.hidden = true;
-      }
-      fillList(document.getElementById("out-watchouts"), data.watchouts);
-      fillList(document.getElementById("out-care"), data.whenToSeekCare);
-      document.getElementById("out-disclaimer").textContent = data.disclaimer;
-      document.getElementById("out-lens-disclaimer").textContent =
-        data.lensDisclaimer || "";
-      result.hidden = false;
-      result.scrollIntoView({ behavior: "smooth", block: "start" });
+      await runAdvice(payload);
     } catch (err) {
       errorEl.hidden = false;
       errorEl.textContent = err.message;
@@ -299,6 +423,39 @@ async function boot() {
       btn.textContent = "Get my 7-day plan";
     }
   });
+
+  const updateBtn = document.getElementById("btn-update-forecast");
+  if (updateBtn) {
+    updateBtn.addEventListener("click", async () => {
+      if (!lastPayload) {
+        alert("Submit your metrics first to generate a plan.");
+        return;
+      }
+      const calorieAdjust = Number(document.getElementById("adj-calories").value || 0);
+      const exerciseBonusKcal = Number(document.getElementById("adj-exercise").value || 0);
+      const payload = {
+        ...lastPayload,
+        calorieAdjust,
+        exerciseBonusKcal,
+      };
+      if (!calorieAdjust) delete payload.calorieAdjust;
+      if (!exerciseBonusKcal) delete payload.exerciseBonusKcal;
+      updateBtn.disabled = true;
+      updateBtn.textContent = "Updating…";
+      try {
+        await runAdvice(payload, { scroll: false });
+        document.getElementById("out-progress-wrap")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      } catch (err) {
+        alert(err.message || "Could not update forecast");
+      } finally {
+        updateBtn.disabled = false;
+        updateBtn.textContent = "Update forecast & food plan";
+      }
+    });
+  }
 }
 
 boot().catch((err) => {

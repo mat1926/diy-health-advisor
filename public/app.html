@@ -327,6 +327,114 @@
             <p class="muted" id="out-kit-disclaimer" style="margin-top: 1rem; font-size: 0.9rem"></p>
           </article>
 
+          <article class="panel" id="out-food-wrap" hidden>
+            <h3 id="out-food-title">Detailed food plan</h3>
+            <p id="out-food-summary"></p>
+            <p class="muted" id="out-food-kit"></p>
+            <div class="form-grid" style="margin-top: 1rem">
+              <div>
+                <p class="badge">Day kcal</p>
+                <p class="target-stat" id="out-food-kcal"></p>
+                <p class="muted" id="out-food-kcal-detail"></p>
+              </div>
+              <div>
+                <p class="badge">Protein</p>
+                <p class="target-stat" id="out-food-protein"></p>
+                <p class="muted" id="out-food-protein-detail"></p>
+              </div>
+              <div>
+                <p class="badge">Carbs / Fat</p>
+                <p class="target-stat" id="out-food-cf"></p>
+                <p class="muted" id="out-food-cf-detail"></p>
+              </div>
+            </div>
+            <div id="out-food-meals" style="margin-top: 1.25rem"></div>
+            <h3 style="margin-top: 1.25rem">Vitamin coverage</h3>
+            <div class="table-wrap">
+              <table class="data-table" id="out-food-vit">
+                <thead>
+                  <tr><th>Vitamin</th><th>From plan</th><th>Target</th><th>Multi / note</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <h3 style="margin-top: 1.25rem">Mineral coverage</h3>
+            <div class="table-wrap">
+              <table class="data-table" id="out-food-min">
+                <thead>
+                  <tr><th>Mineral</th><th>From plan</th><th>Target</th><th>Multi / note</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <h3 style="margin-top: 1.25rem">Amino acid coverage</h3>
+            <div class="table-wrap">
+              <table class="data-table" id="out-food-aa">
+                <thead>
+                  <tr><th>Amino acid</th><th>From plan</th><th>Target</th><th>Source</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <h3 style="margin-top: 1.25rem">Shopping list</h3>
+            <ul id="out-food-shop"></ul>
+            <h3 style="margin-top: 1.25rem">Prep tips</h3>
+            <ul id="out-food-tips"></ul>
+            <p class="muted" id="out-food-disclaimer" style="margin-top: 1rem; font-size: 0.9rem"></p>
+          </article>
+
+          <article class="panel" id="out-progress-wrap" hidden>
+            <h3>Projected progress (BMI ≥ 25)</h3>
+            <p id="out-progress-summary"></p>
+            <div class="form-grid" style="margin-top: 1rem">
+              <div>
+                <p class="badge">Now</p>
+                <p class="target-stat" id="out-progress-now"></p>
+                <p class="muted" id="out-progress-now-detail"></p>
+              </div>
+              <div>
+                <p class="badge">Pace</p>
+                <p class="target-stat" id="out-progress-pace"></p>
+                <p class="muted" id="out-progress-pace-detail"></p>
+              </div>
+              <div>
+                <p class="badge">To BMI ~24.9</p>
+                <p class="target-stat" id="out-progress-goal"></p>
+                <p class="muted" id="out-progress-goal-detail"></p>
+              </div>
+            </div>
+            <h3 style="margin-top: 1.25rem">Milestones</h3>
+            <ul id="out-progress-milestones"></ul>
+            <h3 style="margin-top: 1.25rem">Modify plan &amp; update forecast</h3>
+            <p class="muted" id="out-progress-hint"></p>
+            <div class="form-grid" style="margin-top: 0.75rem">
+              <label>
+                Reduce calories
+                <select id="adj-calories">
+                  <option value="0">Plan default</option>
+                  <option value="-100">−100 kcal / day</option>
+                  <option value="-200">−200 kcal / day</option>
+                  <option value="-300">−300 kcal / day</option>
+                  <option value="-400">−400 kcal / day</option>
+                </select>
+              </label>
+              <label>
+                Add exercise burn
+                <select id="adj-exercise">
+                  <option value="0">Plan default</option>
+                  <option value="100">+100 kcal / day</option>
+                  <option value="200">+200 kcal / day</option>
+                  <option value="300">+300 kcal / day</option>
+                  <option value="400">+400 kcal / day</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-actions" style="margin-top: 0.75rem">
+              <button class="btn btn-primary" type="button" id="btn-update-forecast">Update forecast &amp; food plan</button>
+            </div>
+            <p class="muted" id="out-progress-disclaimer" style="margin-top: 1rem; font-size: 0.9rem"></p>
+          </article>
+
           <article class="panel" id="out-targets-wrap" hidden>
             <h3>Detailed targets</h3>
             <p class="muted" id="out-targets-intro">

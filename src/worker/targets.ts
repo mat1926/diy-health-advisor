@@ -153,12 +153,24 @@ export function buildDetailedTargets(m: MetricsInput): DetailedTargets | null {
     goalAdjustment += " Alternative metabolic lens: keep protein high if lowering refined carbs.";
   }
 
+  // Optional overweight-plan modifiers from the forecast UI
+  const calorieAdjust = m.calorieAdjust ?? 0;
+  if (calorieAdjust < 0) {
+    dailyTarget = Math.max(1200, Math.round(dailyTarget + calorieAdjust));
+    goalAdjustment += ` User modifier: ${calorieAdjust} kcal/day on intake.`;
+  }
+
   // Exercise burn — CDC plan can use a public-health-style activity floor; alt uses recovery/walking-oriented floors only
   const sedentaryTdee = Math.round(bmr * 1.2);
   const activityGap = Math.max(cdc ? 150 : 200, tdee - sedentaryTdee);
   let dailyBurnTargetKcal = Math.round(activityGap * (cdc ? 0.55 : 0.5));
   if (m.activityLevel === "sedentary" || m.activityLevel === "light") {
     dailyBurnTargetKcal = Math.max(cdc ? 150 : 180, Math.round(bmr * (cdc ? 0.12 : 0.1)));
+  }
+  const exerciseBonus = m.exerciseBonusKcal ?? 0;
+  if (exerciseBonus > 0) {
+    dailyBurnTargetKcal += exerciseBonus;
+    goalAdjustment += ` User modifier: +${exerciseBonus} kcal/day exercise burn.`;
   }
   if (
     (typeof m.sleepHours === "number" && m.sleepHours < 6) ||

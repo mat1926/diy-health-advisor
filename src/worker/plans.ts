@@ -28,6 +28,8 @@ export const FREE_FIELDS = [
   "urineUrobilinogen",
   "urineNitrite",
   "urineLeukocytes",
+  "calorieAdjust",
+  "exerciseBonusKcal",
 ] as const;
 
 /** Siemens Multistix 10 SG–style pad readouts (educational DIY logging). */
@@ -116,6 +118,10 @@ export type MetricsInput = {
   urineUrobilinogen?: UrineUrobilinogen;
   urineNitrite?: UrineNitrite;
   urineLeukocytes?: UrinePadLevel;
+  /** Extra daily calorie change for overweight plan tuning (e.g. -200). */
+  calorieAdjust?: number;
+  /** Extra intentional exercise burn kcal/day for forecast tuning. */
+  exerciseBonusKcal?: number;
   notes?: string;
 };
 
@@ -197,6 +203,8 @@ export function sanitizeMetrics(plan: PlanId, raw: Record<string, unknown>): Met
   num("salivaPh", 4.5, 8.5);
   num("urinePh", 4.5, 9.0);
   num("urineSpecificGravity", 1.0, 1.04);
+  num("calorieAdjust", -500, 0);
+  num("exerciseBonusKcal", 0, 600);
 
   str("urineGlucose", URINE_GLUCOSE);
   str("urineBilirubin", URINE_PAD_LEVEL);
