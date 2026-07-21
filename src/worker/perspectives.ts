@@ -54,8 +54,8 @@ export const PERSPECTIVES: Record<
   },
   alternative: {
     id: "alternative",
-    label: "Alternative doctors (blended themes)",
-    shortName: "Alternative",
+    label: "Alternative doctor blend",
+    shortName: "Alternative blend",
     themes: [
       "Metabolic flexibility and blood-sugar steadiness",
       "Whole foods and gut-friendly meals",

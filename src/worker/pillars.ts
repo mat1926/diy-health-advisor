@@ -125,7 +125,7 @@ function buildRest(
       );
       break;
     case "alternative":
-      items.push("Alternative doctors note: protect recovery before stacking new diet experiments.");
+      items.push("Alternative blend note: protect recovery before stacking new diet experiments.");
       break;
     default:
       break;
@@ -267,7 +267,7 @@ function buildNutrition(
       );
       break;
     case "alternative":
-      items.push("Alternative doctors note: reduce sugary drinks and keep hydration steady through the day.");
+      items.push("Alternative blend note: reduce sugary drinks and keep hydration steady through the day.");
       break;
     default:
       break;
@@ -401,7 +401,7 @@ function buildExercise(
       items.push("Alternative clean-living note: outdoor walking counts — avoid overtraining as a “fix.”");
       break;
     case "alternative":
-      items.push("Alternative doctors note: walk most days and keep two simple strength sessions.");
+      items.push("Alternative blend note: walk most days and keep two simple strength sessions.");
       break;
     default:
       break;

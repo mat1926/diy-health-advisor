@@ -471,7 +471,7 @@ function fillDoctorReview(review, disclaimer) {
 
     const badge = document.createElement("p");
     badge.className = "badge";
-    badge.textContent = `${card.doctor.displayName} · ${card.metricLabel}`;
+    badge.textContent = `Blend theme · ${card.doctor.displayName} · ${card.metricLabel}`;
 
     const title = document.createElement("h4");
     title.style.margin = "0.35rem 0";
@@ -742,33 +742,6 @@ async function boot() {
       set("reviewDoctor", "all");
       const perspective = form.elements.namedItem("perspective");
       if (perspective) perspective.value = "alternative";
-    });
-  }
-
-  const filterDoctorBtn = document.getElementById("btn-filter-doctor");
-  if (filterDoctorBtn) {
-    filterDoctorBtn.addEventListener("click", async () => {
-      if (!lastPayload) {
-        alert("Submit your metrics first.");
-        return;
-      }
-      const reviewDoctor = document.getElementById("out-doctor-filter").value || "all";
-      const formSel = form.elements.namedItem("reviewDoctor");
-      if (formSel) formSel.value = reviewDoctor;
-      filterDoctorBtn.disabled = true;
-      filterDoctorBtn.textContent = "Filtering…";
-      try {
-        await runAdvice({ ...lastPayload, reviewDoctor }, { scroll: false });
-        document.getElementById("out-doctor-wrap")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      } catch (err) {
-        alert(err.message || "Could not filter doctor review");
-      } finally {
-        filterDoctorBtn.disabled = false;
-        filterDoctorBtn.textContent = "Apply doctor filter";
-      }
     });
   }
 }

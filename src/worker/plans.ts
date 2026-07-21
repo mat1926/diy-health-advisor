@@ -69,7 +69,7 @@ export const PLAN_LIMITS = {
       "Basic metrics (age, height ft/in, weight lbs, activity, goal)",
       "Vitals: resting HR, blood pressure, BP upon standing",
       "DIY saliva pH + Multistix 10 SG urine pads",
-      "CDC-style or alternative-doctors plan styles",
+      "CDC-style or Alternative doctor blend",
       "3 advice runs per day",
       "Always-visible medical disclaimer",
     ],

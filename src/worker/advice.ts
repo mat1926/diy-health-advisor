@@ -191,7 +191,10 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const nutritionKit = buildNutritionKitPlan(m, targets);
   const foodPlan = buildDetailedFoodPlan(m, targets);
   const weightProgress = buildWeightProgressForecast(m, targets);
-  const doctorReview = buildDoctorMetricReview(m, resolveDoctorFilter(m.reviewDoctor));
+  const doctorReview =
+    perspectiveId === "cdc"
+      ? null
+      : buildDoctorMetricReview(m, resolveDoctorFilter(m.reviewDoctor ?? "all"));
   const lifeExpectancy = estimateLifeExpectancy(m);
 
   const summaryParts = [
@@ -207,7 +210,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
       ? targets.fatStores.reservesLine
       : null,
     doctorReview
-      ? `doctor-lens review: ${doctorReview.findings.length} finding(s) · ${doctorReview.cards.length} rec cards`
+      ? `alternative blend metric review: ${doctorReview.findings.length} finding(s) · ${doctorReview.cards.length} theme cards`
       : null,
     targets
       ? `targets: sleep ${targets.sleep.hoursTarget}h · ${

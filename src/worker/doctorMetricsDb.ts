@@ -7,7 +7,7 @@
 import { bmi, type MetricsInput } from "./plans";
 import type { PerspectiveId } from "./perspectives";
 
-export const DOCTOR_DB_DISCLAIMER = `These “doctor lens” notes are educational summaries of themes often discussed in alternative wellness teaching. They are not quotes, protocols, or endorsements from any clinician. VitalGauge is not affiliated with Dr Berg, Dr Ekberg, Dr Axe, Dr Jockers, Dr Clark, or any private practice. Home BP and pH readings are not diagnoses. Seek licensed care for high blood pressure, dizziness on standing, or unexplained symptoms.`;
+export const DOCTOR_DB_DISCLAIMER = `These alternative-blend notes are educational summaries of common wellness themes (metabolic, fitness, food-first, functional, clean-living). They are not quotes, protocols, or endorsements from any clinician or private practice. Home BP and pH readings are not diagnoses. Seek licensed care for high blood pressure, dizziness on standing, or unexplained symptoms.`;
 
 export type DoctorId = "berg" | "ekberg" | "axe" | "jockers" | "clark";
 
@@ -22,7 +22,9 @@ export type MetricKey =
   | "high_stress";
 
 export type DoctorProfile = {
+  /** Internal processing id — never show this name in user UI. */
   id: DoctorId;
+  /** User-facing theme label (no clinician names). */
   displayName: string;
   lensId: PerspectiveId;
   shortFocus: string;
@@ -31,31 +33,31 @@ export type DoctorProfile = {
 export const DOCTORS: Record<DoctorId, DoctorProfile> = {
   berg: {
     id: "berg",
-    displayName: "Dr Berg (metabolic / lower-carb themes)",
+    displayName: "Metabolic / lower-carb themes",
     lensId: "metabolic",
     shortFocus: "Electrolytes, insulin, lower refined carbs",
   },
   ekberg: {
     id: "ekberg",
-    displayName: "Dr Ekberg (metabolic fitness themes)",
+    displayName: "Metabolic fitness themes",
     lensId: "fitness",
     shortFocus: "Insulin sensitivity, walking, meal composition",
   },
   axe: {
     id: "axe",
-    displayName: "Dr Axe (food-first / gut themes)",
+    displayName: "Food-first / gut themes",
     lensId: "food_first",
     shortFocus: "Nutrient-dense foods, gut support, kitchen staples",
   },
   jockers: {
     id: "jockers",
-    displayName: "Dr Jockers (functional nutrition themes)",
+    displayName: "Functional nutrition themes",
     lensId: "functional",
     shortFocus: "Inflammation load, stress, anti-inflammatory plates",
   },
   clark: {
     id: "clark",
-    displayName: "Dr Clark (clean living / DIY hygiene themes)",
+    displayName: "Clean living / DIY hygiene themes",
     lensId: "clean_living",
     shortFocus: "Environment, water quality, simple DIY tracking",
   },
@@ -285,7 +287,7 @@ export const DOCTOR_METRIC_DB: DoctorMetricRec[] = [
       "Simplify one personal-care product with harsh flavors/acids if irritating.",
       "Pair with urine Multistix only as separate DIY context — not diagnosis.",
     ],
-    caution: "DIY pH logging is educational curiosity, not a Clark-style cure protocol.",
+    caution: "DIY pH logging is educational curiosity, not a cure protocol.",
   },
 
   // —— Extra metrics so the DB is usable beyond the demo ——
@@ -666,7 +668,7 @@ export function buildDoctorMetricReview(
     cards,
     doctors,
     demoNote: hasDemoTrio
-      ? "Demo pattern detected: high seated BP + lower saliva pH + BP drop on standing. Use the doctor filter to compare each lens."
+      ? "Demo pattern detected: high seated BP + lower saliva pH + BP drop on standing. Theme cards below compare educational blend lenses."
       : undefined,
   };
 }
