@@ -62,7 +62,7 @@ export const PLAN_LIMITS = {
     id: "free" as const,
     name: "Free",
     priceLabel: "$0",
-    advicePerDay: 3,
+    advicePerDay: 9999, // temporarily unlimited for testing (was 3)
     fields: FREE_FIELDS,
     features: [
       "Basic metrics (age, height ft/in, weight lbs, activity, goal)",
