@@ -152,7 +152,7 @@ function fillFoodPlan(fp, disclaimer) {
   document.getElementById("out-food-title").textContent = fp.title || "Detailed food plan";
   document.getElementById("out-food-summary").textContent = fp.summary || "";
   document.getElementById("out-food-kit").textContent =
-    `Kit base: ${fp.kitBase?.wheyScoops ?? 0} whey scoop(s) (~${fp.kitBase?.wheyProteinG ?? 0}g) · ${fp.kitBase?.multi || "multi"} · ${fp.kitBase?.d3Note || ""}`;
+    `Kit base: ${fp.kitBase?.wheyScoops ?? 0} whey scoop(s) (~${fp.kitBase?.wheyProteinG ?? 0}g protein · ~${fp.kitBase?.wheyKcal ?? 0} kcal) · ${fp.kitBase?.multi || "multi"} · ${fp.kitBase?.d3Note || ""}`;
   document.getElementById("out-food-kcal").textContent = `${fp.dayTotals.kcal} kcal`;
   document.getElementById("out-food-kcal-detail").textContent =
     `Target ${fp.targets.kcal} · hit ${fp.macroHit.kcalPctOfTarget}%`;
@@ -162,7 +162,30 @@ function fillFoodPlan(fp, disclaimer) {
   document.getElementById("out-food-cf").textContent =
     `${fp.dayTotals.carbsG}g / ${fp.dayTotals.fatG}g`;
   document.getElementById("out-food-cf-detail").textContent =
-    `Targets ${fp.targets.carbsG}g carbs · ${fp.targets.fatG}g fat`;
+    `Targets ${fp.targets.carbsG}g carbs · ${fp.targets.fatG}g fat · fiber ${fp.targets.fiberG}g`;
+
+  fillList(document.getElementById("out-food-kit-gaps"), fp.kitGapSummary || []);
+
+  const kitBody = document.querySelector("#out-food-kit-macro tbody");
+  if (kitBody) {
+    kitBody.innerHTML = "";
+    for (const row of fp.kitMacroGaps || []) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${row.nutrient}</td><td>${row.target} ${row.unit}</td><td>${row.fromKit} ${row.unit}</td><td><strong>${row.stillNeededFromFood} ${row.unit}</strong></td><td>${row.kitCoversPct}%</td>`;
+      tr.title = row.verdict || "";
+      kitBody.appendChild(tr);
+    }
+  }
+
+  const itemBody = document.querySelector("#out-food-itemized tbody");
+  if (itemBody) {
+    itemBody.innerHTML = "";
+    for (const row of fp.itemized || []) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${row.line}</td><td>${row.meal}</td><td>${row.food}</td><td>${row.portion}</td><td>${row.kcal}</td><td>${row.proteinG}</td><td>${row.carbsG}</td><td>${row.fatG}</td><td>${row.source}</td>`;
+      itemBody.appendChild(tr);
+    }
+  }
 
   const mealsEl = document.getElementById("out-food-meals");
   mealsEl.innerHTML = "";
@@ -171,18 +194,19 @@ function fillFoodPlan(fp, disclaimer) {
     block.style.marginBottom = "1rem";
     const h = document.createElement("h4");
     h.style.margin = "0 0 0.35rem";
-    h.textContent = `${meal.name} · ${meal.totals.kcal} kcal (P ${meal.totals.proteinG}g · C ${meal.totals.carbsG}g · F ${meal.totals.fatG}g)`;
-    const hint = document.createElement("p");
-    hint.className = "muted";
-    hint.style.margin = "0 0 0.35rem";
-    hint.textContent = meal.timeHint || "";
-    const ul = document.createElement("ul");
+    h.textContent = `${meal.name} (${meal.timeHint || ""}) · ${meal.totals.kcal} kcal · P ${meal.totals.proteinG}g · C ${meal.totals.carbsG}g · F ${meal.totals.fatG}g`;
+    const table = document.createElement("table");
+    table.className = "data-table";
+    table.innerHTML =
+      "<thead><tr><th>Food</th><th>Portion</th><th>kcal</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>Source</th></tr></thead>";
+    const tbody = document.createElement("tbody");
     for (const item of meal.items || []) {
-      const li = document.createElement("li");
-      li.textContent = `${item.name} — ${item.portion} · ${item.kcal} kcal · P${item.proteinG}/C${item.carbsG}/F${item.fatG}${item.kit ? " · kit" : ""}`;
-      ul.appendChild(li);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${item.name}</td><td>${item.portion}</td><td>${item.kcal}</td><td>${item.proteinG}g</td><td>${item.carbsG}g</td><td>${item.fatG}g</td><td>${item.kit ? "kit" : "food"}</td>`;
+      tbody.appendChild(tr);
     }
-    block.append(h, hint, ul);
+    table.appendChild(tbody);
+    block.append(h, table);
     mealsEl.appendChild(block);
   }
 

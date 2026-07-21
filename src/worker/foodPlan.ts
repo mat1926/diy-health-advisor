@@ -33,6 +33,29 @@ export type NutrientCoverage = {
   note?: string;
 };
 
+export type ItemizedFoodLine = {
+  line: number;
+  meal: string;
+  timeHint: string;
+  food: string;
+  portion: string;
+  kcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  source: "kit" | "food";
+};
+
+export type KitMacroGap = {
+  nutrient: string;
+  target: number;
+  unit: string;
+  fromKit: number;
+  stillNeededFromFood: number;
+  kitCoversPct: number;
+  verdict: string;
+};
+
 export type DetailedFoodPlan = {
   disclaimer: string;
   title: string;
@@ -41,11 +64,19 @@ export type DetailedFoodPlan = {
   kitBase: {
     wheyScoops: number;
     wheyProteinG: number;
+    wheyKcal: number;
+    wheyCarbsG: number;
+    wheyFatG: number;
     multi: string;
     multiUrl: string;
     d3Note: string;
     shakerNote: string;
   };
+  /** What whey + NOW multi/D3 do NOT cover for macros (and related). */
+  kitMacroGaps: KitMacroGap[];
+  kitGapSummary: string[];
+  /** Flat itemized day plan (every food line). */
+  itemized: ItemizedFoodLine[];
   meals: MealBlock[];
   dayTotals: {
     kcal: number;
@@ -324,6 +355,97 @@ export function buildDetailedFoodPlan(
     );
   });
 
+  const wheyKcal = wheyScoops * WHEY_SCOOP_KCAL;
+  const wheyCarbsG = wheyScoops * 2;
+  const wheyFatG = wheyScoops * 1;
+
+  // NOW ADAM/EVE and D3 contribute ~0 macronutrients
+  const gapRow = (
+    nutrient: string,
+    target: number,
+    unit: string,
+    fromKit: number,
+    verdict: string,
+  ): KitMacroGap => {
+    const still = Math.max(0, Math.round((target - fromKit) * 10) / 10);
+    const kitCoversPct = target > 0 ? Math.round((fromKit / target) * 100) : 0;
+    return { nutrient, target, unit, fromKit, stillNeededFromFood: still, kitCoversPct, verdict };
+  };
+
+  const kitMacroGaps: KitMacroGap[] = [
+    gapRow(
+      "Calories",
+      targets.calories.dailyTarget,
+      "kcal",
+      wheyKcal,
+      "NOW multi/D3 ≈ 0 kcal. Almost all calories must come from food (plus whey scoops only).",
+    ),
+    gapRow(
+      "Protein",
+      targets.macros.proteinG,
+      "g",
+      wheyProteinG,
+      wheyScoops > 0
+        ? `Whey covers ~${wheyProteinG}g; remaining protein must come from eggs/meat/fish/dairy/plants. Multi adds ~0g protein.`
+        : "No whey scoops planned — all protein from food. Multi adds ~0g protein.",
+    ),
+    gapRow(
+      "Carbohydrates",
+      targets.macros.carbsG,
+      "g",
+      wheyCarbsG,
+      "Whey has only trace carbs; NOW multi/D3 ≈ 0g carbs. Carbs are almost entirely from food.",
+    ),
+    gapRow(
+      "Fat",
+      targets.macros.fatG,
+      "g",
+      wheyFatG,
+      "Whey has only trace fat; NOW multi/D3 ≈ 0g fat. Fat is almost entirely from food (oils, avocado, meat, eggs, nuts).",
+    ),
+    gapRow(
+      "Fiber",
+      targets.macros.fiberG,
+      "g",
+      0,
+      "Not covered by whey or NOW supplements. Fiber must come from vegetables, fruit, legumes, and/or whole grains.",
+    ),
+    gapRow(
+      "Water / fluids",
+      targets.macros.waterLiters,
+      "L",
+      0,
+      "Shaker helps habit, but fluid volume is not a supplement nutrient — drink water/other fluids separately.",
+    ),
+  ];
+
+  const kitGapSummary = [
+    "NOW ADAM/EVE and NOW D3 do not provide meaningful calories, protein, carbs, fat, or fiber.",
+    `Whey (~${wheyScoops} scoop(s)) mainly covers protein (~${wheyProteinG}g) and a little energy (~${wheyKcal} kcal) — not a full macro plan.`,
+    `Still needed from food ≈ ${Math.max(0, targets.macros.proteinG - wheyProteinG)}g protein · ${Math.max(0, targets.macros.carbsG - wheyCarbsG)}g carbs · ${Math.max(0, targets.macros.fatG - wheyFatG)}g fat · ${targets.macros.fiberG}g fiber · ~${Math.max(0, targets.calories.dailyTarget - wheyKcal)} kcal.`,
+    "Potassium, sodium, and most food-matrix nutrients still come from meals even when a multi is used.",
+    "High-dose D3 10,000 IU is not a daily macro or default vitamin D protocol from this app.",
+  ];
+
+  const itemized: ItemizedFoodLine[] = [];
+  let lineNo = 1;
+  for (const meal of meals) {
+    for (const item of meal.items) {
+      itemized.push({
+        line: lineNo++,
+        meal: meal.name,
+        timeHint: meal.timeHint,
+        food: item.name,
+        portion: item.portion,
+        kcal: item.kcal,
+        proteinG: item.proteinG,
+        carbsG: item.carbsG,
+        fatG: item.fatG,
+        source: item.kit ? "kit" : "food",
+      });
+    }
+  }
+
   const shoppingList = [
     KIT_PRODUCTS.whey.name,
     sex === "female" ? KIT_PRODUCTS.eve.name : KIT_PRODUCTS.adam.name,
@@ -350,18 +472,24 @@ export function buildDetailedFoodPlan(
   return {
     disclaimer: FOOD_PLAN_DISCLAIMER,
     title: alt
-      ? "Detailed food plan (alternative · kit-based)"
-      : "Detailed food plan (CDC-style · kit-based)",
-    summary: `A full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s) and ${sex === "female" ? "EVE" : "ADAM"} as the vitamin/mineral base. Educational portions — adjust for hunger, training, and clinician advice.`,
+      ? "Detailed itemized food plan (alternative · kit-based)"
+      : "Detailed itemized food plan (CDC-style · kit-based)",
+    summary: `Itemized full-day menu scaled to ~${targets.calories.dailyTarget} kcal with ~${wheyScoops} whey scoop(s) and ${sex === "female" ? "EVE" : "ADAM"}. See kit macro gaps — carbs, fat, fiber, and most calories are not covered by whey/NOW alone.`,
     style: alt ? "alternative" : "cdc",
     kitBase: {
       wheyScoops,
       wheyProteinG,
+      wheyKcal,
+      wheyCarbsG,
+      wheyFatG,
       multi: multiName,
       multiUrl,
       d3Note: "NOW D3 10,000 IU is listed in the kit but not placed on the daily menu without clinician clearance.",
       shakerNote: `Use ${KIT_PRODUCTS.shaker.name} for whey and fluid blocks.`,
     },
+    kitMacroGaps,
+    kitGapSummary,
+    itemized,
     meals,
     dayTotals,
     targets: {
