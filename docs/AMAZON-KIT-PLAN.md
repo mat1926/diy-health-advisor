@@ -15,6 +15,9 @@
 | [B00F45EQ4W](https://www.amazon.com/dp/B00F45EQ4W) | NOW Vitamin D3 **10,000 IU** softgels | High-potency **vitamin D** — use only with clinician guidance / labs |
 | [B0013OVWWM](https://www.amazon.com/dp/B0013OVWWM) | NOW **ADAM** men’s multivitamin (120 tabs) | Daily **vitamins + minerals** for male adults |
 | [B000JN6MBO](https://www.amazon.com/dp/B000JN6MBO) | NOW **EVE** women’s multivitamin (180 tabs) | Daily **vitamins + minerals** for female adults (includes iron) |
+| [B01GFSEB00](https://www.amazon.com/dp/B01GFSEB00) | **pH strips** (saliva & urine) | DIY **saliva pH** (and optional urine pH) for demographics |
+| [B07WFTQ94B](https://www.amazon.com/dp/B07WFTQ94B) | **RENPHO** upper-arm **BP monitor** | Home **BP seated/standing** + pulse |
+| [B01N1UX8RW](https://www.amazon.com/dp/B01N1UX8RW) | **RENPHO** smart **body scale** | **Weight** (and optional composition) for progress |
 
 Pick **ADAM or EVE** by sex — not both unless a clinician directs.
 
@@ -24,7 +27,7 @@ Pick **ADAM or EVE** by sex — not both unless a clinician directs.
 
 | VitalGauge need | Met by this base? | How / gap |
 |-----------------|-------------------|-----------|
-| Demographics (age, ht, wt, activity, goal) | ❌ Not from kit | User still enters in app (scale/tape separate) |
+| Demographics (age, ht, wt, activity, goal) | ⚠️ Weight via RENPHO scale | Height/age/activity still entered manually |
 | Sleep (hrs) | ❌ | Need sleep log / wearable / clock |
 | Calories (daily) | ⚠️ Indirect | App calculates; kit doesn’t measure intake |
 | Exercise (kcal burn) | ❌ | Need walks/training log or tracker |
@@ -32,16 +35,16 @@ Pick **ADAM or EVE** by sex — not both unless a clinician directs.
 | Amino acids | ⚠️ Via protein | Whey supplies EAAs; no lab measurement |
 | Vitamins | ⚠️ Supplement path | Multi + D3; not the same as food RDAs / labs |
 | Minerals | ⚠️ Supplement path | Multi covers many; sodium/potassium still mostly food |
-| Saliva pH | ❌ | Need saliva pH strips |
+| Saliva pH | ✅ | Kit **pH strips** → app saliva pH field |
 | Urine Multistix 10 SG | ⚠️ Add-on | [B06WCZVMLC](https://www.amazon.com/dp/B06WCZVMLC) Siemens Multistix 10 SG → app demographics pads |
-| Resting HR | ❌ | Need pulse check / HR monitor |
-| BP seated | ❌ | Need BP cuff |
-| BP upon standing | ❌ | Need BP cuff + protocol |
+| Resting HR | ✅ | Via **RENPHO BP** pulse readout |
+| BP seated | ✅ | **RENPHO BP monitor** |
+| BP upon standing | ✅ | Same cuff + stand protocol |
 | Rest / Exercise pillars | ⚠️ Behavioral | App plans; kit doesn’t measure recovery/movement |
 
 ### Bottom line
-**Unable to fully meet measurement requirements with this base alone.**  
-**Able to support a Nutrition-forward “fulfillment” layer** (protein shake + sex-matched multi ± D3) that aligns with app-generated targets — after the user still measures vitals with other tools.
+**Able to support Nutrition + core DIY vitals** (protein/multi ± D3, pH strips, RENPHO BP, RENPHO scale).  
+**Still need Multistix** for the full urine pad panel, plus sleep/exercise logging separately.
 
 ---
 

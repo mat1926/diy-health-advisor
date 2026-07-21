@@ -1,7 +1,7 @@
 import type { MetricsInput } from "./plans";
 import type { DetailedTargets } from "./targets";
 
-export const NUTRITION_KIT_DISCLAIMER = `This Nutrition Kit plan maps educational VitalGauge targets to specific retail products for DIY convenience. It is not medical advice, a prescription, or an FDA-evaluated protocol. Multivitamins and vitamin D do not replace food or lab-guided care. Do not take high-dose vitamin D without clinician guidance. Choose ADAM or EVE by sex — do not combine unless a clinician directs. Product labels override any summary here.`;
+export const NUTRITION_KIT_DISCLAIMER = `This Nutrition Kit plan maps educational VitalGauge targets to specific retail products for DIY convenience. It is not medical advice, a prescription, or an FDA-evaluated protocol. Multivitamins and vitamin D do not replace food or lab-guided care. Home pH strips, BP cuffs, and smart scales are for self-tracking only — not diagnoses. Do not take high-dose vitamin D without clinician guidance. Choose ADAM or EVE by sex — do not combine unless a clinician directs. Product labels override any summary here.`;
 
 export type KitProduct = {
   asin: string;
@@ -40,6 +40,24 @@ export const KIT_PRODUCTS = {
     name: "NOW EVE women’s multivitamin (180 tablets)",
     url: "https://www.amazon.com/dp/B000JN6MBO",
     role: "Daily vitamins & minerals for many adult women (includes iron)",
+  },
+  phStrips: {
+    asin: "B01GFSEB00",
+    name: "pH test strips (saliva & urine)",
+    url: "https://www.amazon.com/dp/B01GFSEB00",
+    role: "Log DIY saliva pH (and optional urine pH) in VitalGauge",
+  },
+  renphoBp: {
+    asin: "B07WFTQ94B",
+    name: "RENPHO upper-arm blood pressure monitor",
+    url: "https://www.amazon.com/dp/B07WFTQ94B",
+    role: "Home BP seated + standing + pulse for VitalGauge vitals",
+  },
+  renphoScale: {
+    asin: "B01N1UX8RW",
+    name: "RENPHO smart body scale",
+    url: "https://www.amazon.com/dp/B01N1UX8RW",
+    role: "Track weight (and optional body metrics) for demographics & progress",
   },
 } as const satisfies Record<string, KitProduct>;
 
@@ -132,12 +150,35 @@ export function buildNutritionKitPlan(
       "Do not start NOW D3 10,000 IU as a casual daily dose from this app. Use only with clinician guidance and labs, or choose a lower-dose D3.",
   });
 
+  products.push({
+    ...KIT_PRODUCTS.phStrips,
+    howToUse:
+      "Test saliva mid-morning (before brushing/eating when possible). Compare to the bottle chart and enter saliva pH in VitalGauge demographics. Optional: urine pH is separate from Multistix pads.",
+    caution: "Home pH strips are educational self-tracking — not a lab diagnosis or “acid body type” test.",
+  });
+
+  products.push({
+    ...KIT_PRODUCTS.renphoBp,
+    howToUse:
+      "Sit quietly 5 minutes, then measure seated BP and pulse. For orthostatic check, stand and remeasure after ~1 minute. Enter seated/standing BP and resting HR in VitalGauge.",
+    caution: "Home BP is not a medical diagnosis. Seek care for very high readings, chest pain, or severe dizziness.",
+  });
+
+  products.push({
+    ...KIT_PRODUCTS.renphoScale,
+    howToUse:
+      "Weigh at a consistent time (e.g. morning, after bathroom, before breakfast). Enter weight in demographics; use trends for progress, not day-to-day noise.",
+    caution: "Smart-scale body-fat estimates vary — treat weight as the primary input for VitalGauge.",
+  });
+
   const schedule = [
-    "Morning: breakfast + multivitamin (ADAM or EVE) with food.",
+    "Morning: weigh on RENPHO scale → breakfast + multivitamin (ADAM or EVE) with food.",
+    "Optional: saliva pH strip mid-morning → log in VitalGauge.",
     wheyScoops > 0
       ? `Protein: ${wheyScoops} whey shake(s) in the Strada — place mid-morning and/or post-activity.`
       : "Protein: prioritize food first; keep whey optional.",
     `Fluids: work toward ~${waterLiters} L/day using the Strada among other drinks.`,
+    "1–2×/week: RENPHO BP seated (+ standing if checking orthostatic) and resting pulse → log vitals.",
     "Vitamin D3 10,000 IU: skip unless a clinician cleared this exact potency.",
     "Evening: finish remaining food protein/carbs/fat toward calorie & macro targets from the app.",
   ];
@@ -151,7 +192,7 @@ export function buildNutritionKitPlan(
       : useAdam
         ? "Multi: ADAM 1 tablet with a meal."
         : "Multi: choose ADAM or EVE after clarifying sex/clinician advice.",
-    "Kit does not measure pH, HR, or blood pressure — log those separately if you have tools.",
+    "Measure: RENPHO scale (weight) · pH strips (saliva) · RENPHO BP (seated/standing + pulse) when logging vitals.",
   ];
 
   if (multiUnclear) {
@@ -159,16 +200,16 @@ export function buildNutritionKitPlan(
   }
 
   const gaps = [
-    "No saliva pH strips, BP cuff, or HR tool in this kit — add Multistix 10 SG for urine pads.",
+    "Urine Multistix 10 SG is still a separate add-on for the full urine pad panel (not covered by basic pH strips).",
     "Carbs, fat, sodium, and potassium still come mostly from food.",
     "High-dose D3 is not aligned with typical DIY educational IU targets.",
-    "Supplements are not a substitute for clinical care or bloodwork.",
+    "Supplements and home devices are not a substitute for clinical care or bloodwork.",
   ];
 
   return {
     disclaimer: NUTRITION_KIT_DISCLAIMER,
-    title: "Nutrition Kit plan (whey · shaker · multi · D3)",
-    summary: `Use the Amazon nutrition kit to help hit ~${proteinTargetG}g protein and daily multi coverage while following VitalGauge calorie/macro targets. D3 10,000 IU stays clinician-gated.`,
+    title: "Nutrition Kit plan (whey · multi · D3 · pH · RENPHO BP · scale)",
+    summary: `Use the Amazon kit for ~${proteinTargetG}g protein support, multi coverage, and DIY vitals (pH strips, RENPHO BP, RENPHO scale) while following VitalGauge targets. D3 10,000 IU stays clinician-gated.`,
     daily: {
       caloriesTarget: targets.calories.dailyTarget,
       proteinTargetG,

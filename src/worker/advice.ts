@@ -197,7 +197,7 @@ function templateAdvice(plan: PlanId, m: MetricsInput): AdviceResult {
   const summaryParts = [
     `7-day DIY plan ready (Rest · Nutrition · Exercise)`,
     nutritionKit
-      ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · D3 clinician-gated`
+      ? `Nutrition Kit: ~${nutritionKit.daily.wheyScoops} whey scoop(s) · multi by sex · D3 clinician-gated · pH + RENPHO BP/scale`
       : null,
     foodPlan ? "detailed food plan included" : null,
     weightProgress
